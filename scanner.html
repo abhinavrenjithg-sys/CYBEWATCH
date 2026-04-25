@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch — Web Vulnerability Scanner</title>
+<link rel="stylesheet" href="styles/base.css"/>
+<style>
+body{background:var(--bg-0);color:var(--text-1);font-family:var(--font-sans);margin:0;display:flex;height:100vh;overflow:hidden;}
+.scanner-shell{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 24px;border-bottom:1px solid var(--border);background:var(--bg-1);flex-shrink:0;}
+.topbar h1{font-size:15px;font-weight:700;color:var(--text-1);margin:0;}
+.topbar p{font-size:11px;color:var(--text-3);margin:0;}
+.content{display:flex;flex:1;overflow:hidden;gap:0;}
+.left-panel{width:340px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--bg-1);}
+.right-panel{flex:1;overflow-y:auto;padding:24px;}
+.panel-header{padding:16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;}
+.url-form{padding:16px;display:flex;flex-direction:column;gap:12px;}
+.url-input{width:100%;padding:10px 14px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:8px;color:var(--text-1);font-size:13px;box-sizing:border-box;outline:none;transition:border-color .2s;}
+.url-input:focus{border-color:var(--cyan);}
+.scan-btn{padding:11px;background:linear-gradient(135deg,#00d4ff20,#7c3aed20);border:1px solid var(--cyan);color:var(--cyan);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.scan-btn:hover{background:rgba(0,212,255,.15);box-shadow:0 0 16px rgba(0,212,255,.3);}
+.scan-btn:disabled{opacity:.4;cursor:not-allowed;}
+.progress-wrap{padding:0 16px 16px;}
+.progress-bar-track{height:4px;background:var(--bg-3);border-radius:2px;overflow:hidden;margin-top:8px;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),#7c3aed);border-radius:2px;transition:width .3s ease;}
+.progress-msg{font-size:10px;color:var(--text-3);font-family:var(--font-mono);margin-top:6px;}
+.history-list{flex:1;overflow-y:auto;padding:8px;}
+.hist-item{padding:8px 12px;border-radius:6px;margin-bottom:4px;cursor:pointer;font-size:11px;color:var(--text-2);border:1px solid transparent;transition:.15s;}
+.hist-item:hover{background:var(--bg-2);border-color:var(--border);}
+.hist-item.active{background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.3);}
+.hist-target{font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-meta{color:var(--text-4);font-size:9px;margin-top:2px;font-family:var(--font-mono);}
+/* Result cards */
+.result-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:20px;background:var(--bg-1);border:1px solid var(--border);border-radius:12px;}
+.result-title{font-size:18px;font-weight:800;color:var(--text-1);}
+.result-url{font-size:11px;color:var(--cyan);font-family:var(--font-mono);margin-top:4px;}
+.sev-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.sev-card{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.sev-card .num{font-size:32px;font-weight:800;font-family:var(--font-mono);line-height:1;}
+.sev-card .label{font-size:10px;color:var(--text-3);margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+.finding-card{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;transition:border-color .2s;}
+.finding-card:hover{border-color:var(--border-2);}
+.finding-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
+.sev-badge{padding:3px 8px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;flex-shrink:0;margin-top:2px;}
+.sev-critical{background:rgba(255,45,85,.15);color:#ff2d55;border:1px solid rgba(255,45,85,.3);}
+.sev-high{background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);}
+.sev-medium{background:rgba(234,179,8,.15);color:#eab308;border:1px solid rgba(234,179,8,.3);}
+.sev-low{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);}
+.finding-label{font-weight:700;font-size:13px;color:var(--text-1);}
+.finding-type{font-size:9px;font-family:var(--font-mono);color:var(--text-4);margin-top:2px;}
+.finding-detail{font-size:12px;color:var(--text-2);line-height:1.6;margin-bottom:8px;}
+.finding-rec{font-size:11px;color:var(--cyan);background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:6px;padding:8px 12px;line-height:1.5;}
+.finding-rec::before{content:'✅ Fix: ';font-weight:700;}
+.finding-url{font-size:10px;color:var(--text-4);font-family:var(--font-mono);margin-top:6px;word-break:break-all;}
+.tls-card{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;}
+.tls-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;}
+.tls-field{background:var(--bg-2);border-radius:6px;padding:10px;}
+.tls-field-label{font-size:9px;color:var(--text-4);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.tls-field-val{font-size:12px;font-family:var(--font-mono);color:var(--text-1);}
+.section-title{font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px;}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-4);}
+.empty-state svg{width:48px;height:48px;stroke:var(--text-4);margin-bottom:16px;}
+.empty-state p{font-size:13px;margin-top:8px;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;color:var(--text-2);font-size:11px;cursor:pointer;text-decoration:none;margin-bottom:16px;transition:.15s;}
+.back-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+</style>
+</head>
+<body>
+<div class="scanner-shell">
+  <div class="topbar">
+    <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" width="22" height="22"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+    <div>
+      <h1>Web Vulnerability Scanner</h1>
+      <p>Active scanning for SQLi, XSS, insecure headers, TLS issues & exposed files</p>
+    </div>
+  </div>
+  <div class="content">
+    <div class="left-panel">
+      <div class="panel-header">Target Configuration</div>
+      <div class="url-form">
+        <input class="url-input" id="target-url" type="url" placeholder="https://example.com/page?id=1" value="https://httpbin.org/get"/>
+        <button class="scan-btn" id="scan-btn" onclick="startScan()">▶ LAUNCH SCAN</button>
+      </div>
+      <div class="progress-wrap" id="progress-wrap" style="display:none">
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="progress-msg" id="progress-msg">Initialising…</div>
+      </div>
+      <div class="panel-header" style="margin-top:8px;">Scan History</div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+    <div class="right-panel" id="result-panel">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div style="font-size:16px;font-weight:700;color:var(--text-2);">Enter a URL and launch a scan</div>
+        <p>The scanner will check for SQL injection, XSS, missing security headers, TLS certificate issues, and exposed sensitive files.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/engine.js"></script>
+<script>
+const { ipcRenderer } = require('electron');
+let scanHistory = [];
+
+ipcRenderer.on('scanner:progress', (evt, data) => {
+  document.getElementById('progress-fill').style.width = data.pct + '%';
+  document.getElementById('progress-msg').textContent = data.msg;
+});
+
+async function startScan() {
+  const url = document.getElementById('target-url').value.trim();
+  if (!url) { alert('Please enter a target URL.'); return; }
+  try { new URL(url); } catch { alert('Invalid URL. Include protocol (https://).'); return; }
+
+  document.getElementById('scan-btn').disabled = true;
+  document.getElementById('scan-btn').textContent = '⏳ SCANNING…';
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('result-panel').innerHTML = '<div class="empty-state"><p style="color:var(--cyan);">Scanning — please wait…</p></div>';
+
+  const results = await ipcRenderer.invoke('scanner:start', url);
+
+  document.getElementById('scan-btn').disabled = false;
+  document.getElementById('scan-btn').textContent = '▶ LAUNCH SCAN';
+  document.getElementById('progress-wrap').style.display = 'none';
+
+  if (results.error) {
+    document.getElementById('result-panel').innerHTML = `<div class="empty-state"><p style="color:var(--critical);">Error: ${results.error}</p></div>`;
+    return;
+  }
+
+  scanHistory.unshift(results);
+  renderHistory();
+  renderResults(results);
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = scanHistory.map((r, i) => `
+    <div class="hist-item ${i===0?'active':''}" onclick="renderResults(scanHistory[${i}])">
+      <div class="hist-target">${r.target}</div>
+      <div class="hist-meta">${r.summary.total} findings · ${r.duration}s · ${new Date(r.startTime).toLocaleTimeString()}</div>
+    </div>`).join('');
+}
+
+function renderResults(r) {
+  const sevColor = { critical:'#ff2d55', high:'#f97316', medium:'#eab308', low:'#10b981' };
+  let html = `
+    <div class="result-header">
+      <div>
+        <div class="result-title">Scan Complete — ${r.summary.total} Finding${r.summary.total !== 1 ? 's' : ''}</div>
+        <div class="result-url">${r.target}</div>
+        <div style="font-size:10px;color:var(--text-4);margin-top:4px;font-family:var(--font-mono);">Duration: ${r.duration}s · ${new Date(r.startTime).toLocaleString()}</div>
+      </div>
+    </div>
+    <div class="sev-grid">
+      ${['critical','high','medium','low'].map(s => `
+        <div class="sev-card">
+          <div class="num" style="color:${sevColor[s]};text-shadow:0 0 16px ${sevColor[s]}40">${r.summary[s]||0}</div>
+          <div class="label">${s}</div>
+        </div>`).join('')}
+    </div>`;
+
+  if (r.tls && r.tls.ok) {
+    html += `
+    <div class="section-title">TLS Certificate</div>
+    <div class="tls-card">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${r.tls.isExpired?'#ff2d55':'#10b981'};box-shadow:0 0 8px ${r.tls.isExpired?'#ff2d55':'#10b981'};flex-shrink:0;"></div>
+        <div style="font-weight:700;font-size:13px;">${r.tls.isExpired ? 'Certificate EXPIRED' : r.tls.daysLeft < 30 ? 'Expiring Soon' : 'Certificate Valid'}</div>
+        <div style="font-size:10px;color:var(--text-3);font-family:var(--font-mono);">${r.tls.protocol || ''}</div>
+      </div>
+      <div class="tls-grid">
+        <div class="tls-field"><div class="tls-field-label">Subject</div><div class="tls-field-val">${r.tls.subject}</div></div>
+        <div class="tls-field"><div class="tls-field-label">Issuer</div><div class="tls-field-val">${r.tls.issuer}</div></div>
+        <div class="tls-field"><div class="tls-field-label">Expires</div><div class="tls-field-val" style="color:${r.tls.daysLeft<30?'#f97316':'var(--text-1)'}">${r.tls.daysLeft >= 0 ? r.tls.daysLeft + ' days' : 'EXPIRED'}</div></div>
+      </div>
+    </div>`;
+  }
+
+  if (r.findings.length === 0) {
+    html += `<div class="empty-state" style="padding:40px 0;"><p style="color:var(--low);">✅ No vulnerabilities detected.</p></div>`;
+  } else {
+    html += `<div class="section-title">Findings (${r.findings.length})</div>`;
+    for (const f of r.findings) {
+      html += `
+      <div class="finding-card">
+        <div class="finding-top">
+          <span class="sev-badge sev-${f.severity}">${f.severity}</span>
+          <div>
+            <div class="finding-label">${f.label}</div>
+            <div class="finding-type">${f.type}</div>
+          </div>
+        </div>
+        <div class="finding-detail">${f.detail}</div>
+        <div class="finding-rec">${f.recommendation}</div>
+        ${f.url ? `<div class="finding-url">URL: ${f.url}</div>` : ''}
+      </div>`;
+    }
+  }
+
+  document.getElementById('result-panel').innerHTML = html;
+}
+</script>
+</body>
+</html>

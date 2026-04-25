@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch — Reports Center</title>
+<meta name="description" content="Generate, schedule, and export enterprise security compliance reports and executive briefs."/>
+<link rel="stylesheet" href="styles/base.css"/>
+<link rel="stylesheet" href="styles/dashboard.css"/>
+<style>
+.reports-layout { display: flex; flex: 1; min-height: 0; gap: 0; }
+.reports-sidebar { width: 300px; background: var(--bg-1); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.reports-main { flex: 1; overflow-y: auto; background: #010409; }
+
+/* Left sidebar */
+.rs-header { padding: 20px; border-bottom: 1px solid var(--border); }
+.rs-header h2 { font-size: 13px; font-weight: 700; color: var(--text-1); }
+.rs-header p { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+.rs-body { padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.rs-section-label { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+
+.template-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; cursor: pointer; transition: all 0.2s; position: relative; }
+.template-card:hover { border-color: var(--cyan); background: rgba(0,212,255,0.03); }
+.template-card.selected { border-color: var(--cyan); background: rgba(0,212,255,0.06); }
+.template-card.selected::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--cyan); border-radius: 4px 0 0 4px; }
+.tc-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.tc-icon svg { width: 16px; height: 16px; }
+.tc-title { font-size: 12px; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+.tc-desc { font-size: 10px; color: var(--text-3); line-height: 1.5; }
+.tc-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(0,212,255,0.1); color: var(--cyan); border-radius: 4px; padding: 2px 7px; font-size: 9px; font-weight: 700; margin-top: 8px; border: 1px solid rgba(0,212,255,0.2); }
+
+/* Report Config Panel */
+.report-config-panel { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.config-row { margin-bottom: 14px; }
+.config-row:last-child { margin-bottom: 0; }
+.config-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+.config-select, .config-input { width: 100%; background: var(--bg-1); border: 1px solid var(--border); border-radius: 5px; color: var(--text-1); font-size: 11px; padding: 7px 10px; font-family: var(--font-sans); outline: none; transition: border-color 0.2s; }
+.config-select:focus, .config-input:focus { border-color: var(--cyan); }
+.config-select option { background: #1a1f2e; }
+
+/* Main content */
+.rm-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border-2); background: var(--bg-1); }
+.rm-header h1 { font-size: 20px; font-weight: 700; color: var(--text-1); letter-spacing: -0.5px; }
+.rm-header-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.rm-header-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.rm-content { padding: 24px 28px; }
+
+/* Preview area */
+.report-preview { background: var(--bg-1); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.rp-toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.rp-toolbar-title { font-size: 11px; font-weight: 600; color: var(--text-2); flex: 1; }
+.rp-toolbar-actions { display: flex; gap: 8px; }
+
+/* The actual report document being previewed */
+#report-document { padding: 36px 40px; background: var(--bg-1); min-height: 600px; }
+.report-doc-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.report-doc-logo { display: flex; align-items: center; gap: 12px; }
+.report-doc-logo-icon { width: 40px; height: 40px; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.report-doc-logo-icon svg { width: 22px; height: 22px; color: var(--cyan); }
+.report-doc-brand { font-size: 16px; font-weight: 800; color: var(--text-1); letter-spacing: -0.5px; }
+.report-doc-version { font-size: 9px; color: var(--text-3); font-family: var(--font-mono); }
+.report-doc-meta { text-align: right; }
+.report-doc-title { font-size: 13px; font-weight: 700; color: var(--text-1); }
+.report-doc-timestamp { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); margin-top: 4px; }
+.report-doc-classification { display: inline-flex; align-items: center; gap: 4px; background: rgba(239,68,68,0.08); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 2px 8px; font-size: 9px; font-weight: 700; margin-top: 6px; }
+
+/* Report sections */
+.report-section { margin-bottom: 28px; }
+.report-section-title { font-size: 13px; font-weight: 700; color: var(--text-1); border-left: 3px solid var(--cyan); padding-left: 10px; margin-bottom: 14px; }
+
+/* KPI grids */
+.report-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 4px; }
+.report-kpi { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; text-align: center; }
+.report-kpi-val { font-family: var(--font-mono); font-size: 26px; font-weight: 800; color: var(--text-1); line-height: 1; }
+.report-kpi-label { font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.report-kpi.critical { border-color: rgba(239,68,68,0.3); }
+.report-kpi.critical .report-kpi-val { color: #ef4444; }
+.report-kpi.high { border-color: rgba(249,115,22,0.3); }
+.report-kpi.high .report-kpi-val { color: #f97316; }
+.report-kpi.good { border-color: rgba(16,185,129,0.3); }
+.report-kpi.good .report-kpi-val { color: #10b981; }
+.report-kpi.info { border-color: rgba(0,212,255,0.2); }
+.report-kpi.info .report-kpi-val { color: var(--cyan); }
+
+/* Alert severity breakdown */
+.sev-breakdown { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.sev-row { display: flex; align-items: center; gap: 10px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
+.sev-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.sev-row-label { font-size: 11px; color: var(--text-2); flex: 1; font-weight: 500; }
+.sev-row-val { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--text-1); }
+.sev-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; flex: 1; }
+.sev-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+
+/* Top threats table */
+.report-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.report-table th { text-align: left; padding: 8px 12px; color: var(--text-3); font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); font-weight: 600; }
+.report-table td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text-2); vertical-align: middle; }
+.report-table tr:last-child td { border-bottom: none; }
+.report-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* MITRE coverage matrix */
+.mitre-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.mitre-phase { background: var(--bg-2); border: 1px solid var(--border); border-radius: 5px; padding: 8px 6px; text-align: center; font-size: 9px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; transition: all 0.3s; }
+.mitre-phase.active { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.3); color: var(--cyan); box-shadow: 0 0 10px rgba(0,212,255,0.1); }
+.mitre-phase.warn { background: rgba(249,115,22,0.08); border-color: rgba(249,115,22,0.3); color: #f97316; }
+.mitre-phase.danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+
+/* Remediation actions */
+.action-list { display: flex; flex-direction: column; gap: 8px; }
+.action-item { display: flex; align-items: flex-start; gap: 12px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+.action-num { width: 22px; height: 22px; border-radius: 50%; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--cyan); flex-shrink: 0; margin-top: 1px; }
+.action-body { flex: 1; }
+.action-title { font-size: 11px; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
+.action-desc { font-size: 10px; color: var(--text-3); line-height: 1.5; }
+.action-priority { font-size: 9px; font-weight: 700; padding: 1px 7px; border-radius: 4px; margin-left: auto; flex-shrink: 0; }
+.action-priority.high { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.action-priority.medium { background: rgba(234,179,8,0.1); color: #eab308; border: 1px solid rgba(234,179,8,0.2); }
+.action-priority.low { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+
+/* Compliance matrix */
+.compliance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.compliance-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; text-align: center; }
+.compliance-score { font-family: var(--font-mono); font-size: 28px; font-weight: 800; line-height: 1; }
+.compliance-name { font-size: 10px; color: var(--text-3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.compliance-status { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; margin-top: 6px; padding: 2px 8px; border-radius: 4px; }
+.compliance-status.pass { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+.compliance-status.warn { background: rgba(234,179,8,0.1); color: #eab308; border: 1px solid rgba(234,179,8,0.2); }
+.compliance-status.fail { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+
+/* Progress bar for export */
+.export-progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 8px; display: none; }
+.export-progress-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), #a855f7); border-radius: 2px; width: 0%; transition: width 0.3s ease; }
+
+/* History */
+.history-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-2); }
+.history-item:last-child { border-bottom: none; }
+.history-icon { width: 30px; height: 30px; border-radius: 6px; background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.history-icon svg { width: 14px; height: 14px; color: var(--cyan); }
+.history-info { flex: 1; }
+.history-name { font-size: 11px; font-weight: 600; color: var(--text-1); }
+.history-meta { font-size: 9px; color: var(--text-3); font-family: var(--font-mono); margin-top: 2px; }
+.history-dl { color: var(--cyan); font-size: 10px; cursor: pointer; transition: opacity 0.2s; flex-shrink: 0; }
+.history-dl:hover { opacity: 0.7; }
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand" style="text-decoration: none; display: flex; align-items: center; gap: 12px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+      <div class="brand-text"><div class="brand-name">CybeWatch</div><div class="brand-version">ENTERPRISE v2.4 · Team Glanzee</div></div>
+    </a>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-item-text">Home</span></a>
+      <div class="nav-section-label">Operations</div>
+      <a class="nav-item" data-nav="dashboard" href="dashboard.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="nav-item-text">Dashboard</span>
+      </a>
+      <a class="nav-item" data-nav="topology" href="topology.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <span class="nav-item-text">Topology</span>
+      </a>
+      <a class="nav-item" data-nav="alerts" href="alerts.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="nav-item-text">Alerts</span>
+        <span class="nav-badge" id="alert-nav-badge" style="display:none"></span>
+      </a>
+      <a class="nav-item" data-nav="investigation" href="investigation.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="nav-item-text">Investigation</span>
+      </a>
+      <a class="nav-item" data-nav="playbooks" href="playbooks.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="2" y1="12" x2="5" y2="12"/></svg>
+        <span class="nav-item-text">Playbooks</span>
+      </a>
+      <div class="nav-section-label">Intelligence</div>
+      <a class="nav-item" data-nav="intelligence" href="intelligence.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        <span class="nav-item-text">Threat Intel</span>
+      </a>
+      <a class="nav-item active" data-nav="reports" href="reports.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span class="nav-item-text">Reports</span>
+      </a>
+      <a class="nav-item" data-nav="about" href="about.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="nav-item-text">About Team</span></a>
+      <div class="nav-section-label">System</div>
+      <a class="nav-item" data-nav="settings" href="settings.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span class="nav-item-text">Settings</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer"><div class="team-credit">CybeWatch by <span>Team Glanzee</span><br/>Abhinav R &amp; SF Melena</div>
+      <div class="user-card" onclick="if(window.toggleUserMenu) toggleUserMenu()">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info"><div class="user-name" id="user-display-name">Loading…</div><div class="user-role" id="user-display-role">ROLE</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <button class="topbar-toggle" id="sidebar-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-actions">
+        <span class="pill pill-ok">Sensors Online</span>
+        <button class="notif-btn" title="Toggle Theme" onclick="TW.toggleTheme()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg></button>
+        <div class="topbar-clock" id="topbar-clock">00:00:00</div>
+      </div>
+    </div>
+
+    <!-- Reports Layout -->
+    <div class="reports-layout">
+
+      <!-- Left Config Panel -->
+      <div class="reports-sidebar">
+        <div class="rs-header">
+          <h2>Report Builder</h2>
+          <p>Select a template to generate a report</p>
+        </div>
+        <div class="rs-body">
+
+          <!-- Templates -->
+          <div>
+            <div class="rs-section-label">Templates</div>
+
+            <div class="template-card selected" id="tpl-executive" onclick="selectTemplate('executive')">
+              <div class="tc-icon" style="background:rgba(0,212,255,0.1); color:var(--cyan);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <div class="tc-title">Executive Brief</div>
+              <div class="tc-desc">High-level KPI summary, threat landscape overview, and strategic recommendations for leadership.</div>
+              <div class="tc-badge">📊 C-Suite Ready</div>
+            </div>
+
+            <div class="template-card" id="tpl-incident" onclick="selectTemplate('incident')">
+              <div class="tc-icon" style="background:rgba(239,68,68,0.1); color:#ef4444;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="tc-title">Incident Analysis</div>
+              <div class="tc-desc">Deep-dive forensics report on detected incidents with MITRE ATT&CK mappings and kill-chain analysis.</div>
+              <div class="tc-badge">🔎 SOC Level 2</div>
+            </div>
+
+            <div class="template-card" id="tpl-compliance" onclick="selectTemplate('compliance')">
+              <div class="tc-icon" style="background:rgba(16,185,129,0.1); color:#10b981;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+              </div>
+              <div class="tc-title">Compliance Audit</div>
+              <div class="tc-desc">SOC 2 Type II, ISO 27001, and NIST CSF compliance scoring with gap analysis and remediation roadmap.</div>
+              <div class="tc-badge">✅ Audit Ready</div>
+            </div>
+
+            <div class="template-card" id="tpl-threat" onclick="selectTemplate('threat')">
+              <div class="tc-icon" style="background:rgba(168,85,247,0.1); color:#a855f7;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+              </div>
+              <div class="tc-title">Threat Intel Digest</div>
+              <div class="tc-desc">Threat actor profiles, IOC summaries, and global attack pattern analysis for the selected time window.</div>
+              <div class="tc-badge">🌐 Intel-Grade</div>
+            </div>
+          </div>
+
+          <!-- Config -->
+          <div>
+            <div class="rs-section-label">Configuration</div>
+            <div class="report-config-panel">
+              <div class="config-row">
+                <label class="config-label" for="cfg-period">Time Period</label>
+                <select class="config-select" id="cfg-period">
+                  <option value="24h">Last 24 Hours</option>
+                  <option value="7d" selected>Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                  <option value="90d">Last 90 Days</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+              </div>
+              <div class="config-row">
+                <label class="config-label" for="cfg-classify">Classification</label>
+                <select class="config-select" id="cfg-classify">
+                  <option value="internal">INTERNAL</option>
+                  <option value="confidential" selected>CONFIDENTIAL</option>
+                  <option value="restricted">RESTRICTED</option>
+                  <option value="public">PUBLIC</option>
+                </select>
+              </div>
+              <div class="config-row">
+                <label class="config-label" for="cfg-org">Organization</label>
+                <input class="config-input" id="cfg-org" type="text" value="CybeWatch Enterprise Corp" placeholder="Your org name"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generated Reports History -->
+          <div>
+            <div class="rs-section-label">Export History</div>
+            <div id="report-history">
+              <div style="font-size:11px;color:var(--text-3);text-align:center;padding:16px 0;">No exports yet this session.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Main Preview -->
+      <div class="reports-main">
+        <div class="rm-header">
+          <h1 id="report-preview-title">Executive Security Brief</h1>
+          <div class="rm-header-sub" id="report-preview-sub">Interactive preview — data reflects current simulation state</div>
+          <div class="rm-header-actions">
+            <button class="btn btn-primary" id="btn-generate-pdf" onclick="generatePDF()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export as PDF
+            </button>
+            <button class="btn btn-ghost" onclick="refreshPreview()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              Refresh Data
+            </button>
+            <button class="btn btn-ghost" onclick="printReport()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print
+            </button>
+          </div>
+          <div class="export-progress-bar" id="export-progress-bar">
+            <div class="export-progress-fill" id="export-progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="rm-content">
+          <div class="report-preview">
+            <div class="rp-toolbar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--text-3)"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="rp-toolbar-title" id="rp-toolbar-title">report_executive_brief.pdf — Live Preview</span>
+              <div class="rp-toolbar-actions">
+                <span class="pill pill-ok" style="font-size:9px;">Live Data</span>
+              </div>
+            </div>
+            <div id="report-document">
+              <!-- Generated dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script>
+if(!TW.requireAuth()) { location.href='login.html'; }
+window.initSidebar();
+
+let currentTemplate = 'executive';
+let reportHistory = [];
+
+function selectTemplate(id) {
+  currentTemplate = id;
+  document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('tpl-' + id).classList.add('selected');
+
+  const titles = {
+    executive: 'Executive Security Brief',
+    incident: 'Incident Analysis Report',
+    compliance: 'Compliance Audit Report',
+    threat: 'Threat Intelligence Digest'
+  };
+  const subs = {
+    executive: 'High-level KPI overview for executive leadership',
+    incident: 'Forensic incident breakdown with MITRE ATT&CK mappings',
+    compliance: 'SOC 2 / ISO 27001 / NIST CSF compliance scoring',
+    threat: 'Global threat actor profiles and IOC analysis'
+  };
+  const fileNames = {
+    executive: 'report_executive_brief.pdf',
+    incident: 'report_incident_analysis.pdf',
+    compliance: 'report_compliance_audit.pdf',
+    threat: 'report_threat_intel_digest.pdf'
+  };
+
+  document.getElementById('report-preview-title').textContent = titles[id];
+  document.getElementById('rp-toolbar-title').textContent = (fileNames[id] || 'report.pdf') + ' — Live Preview';
+  renderReport(id);
+}
+
+function renderReport(type) {
+  const doc = document.getElementById('report-document');
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+  const period = document.getElementById('cfg-period').value;
+  const classify = (document.getElementById('cfg-classify').value || 'confidential').toUpperCase();
+  const org = document.getElementById('cfg-org').value || 'Enterprise Corp';
+
+  const sevCounts = TW.countBySev();
+  const totalAlerts = TW.alerts.length;
+  const resolved = TW.alerts.filter(a => a.status === 'resolved').length;
+  const score = TW.state.score || 92;
+
+  const periodLabels = { '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days', '90d': 'Last 90 Days', 'custom': 'Custom Range' };
+
+  const headerHTML = `
+    <div class="report-doc-header">
+      <div class="report-doc-logo">
+        <div class="report-doc-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+        </div>
+        <div>
+          <div class="report-doc-brand">CybeWatch</div>
+          <div class="report-doc-version">ENTERPRISE SECURITY PLATFORM v2.4</div>
+        </div>
+      </div>
+      <div class="report-doc-meta">
+        <div class="report-doc-title">${getReportTitle(type)}</div>
+        <div class="report-doc-timestamp">Generated: ${dateStr} at ${timeStr}</div>
+        <div class="report-doc-timestamp">Organization: ${org} &nbsp;|&nbsp; Period: ${periodLabels[period]}</div>
+        <div style="margin-top:6px;"><span class="report-doc-classification">🔒 ${classify}</span></div>
+      </div>
+    </div>`;
+
+  let bodyHTML = '';
+
+  if (type === 'executive') {
+    bodyHTML = renderExecutiveReport(sevCounts, totalAlerts, resolved, score);
+  } else if (type === 'incident') {
+    bodyHTML = renderIncidentReport(sevCounts, totalAlerts);
+  } else if (type === 'compliance') {
+    bodyHTML = renderComplianceReport(score);
+  } else if (type === 'threat') {
+    bodyHTML = renderThreatReport(sevCounts, totalAlerts);
+  }
+
+  doc.innerHTML = headerHTML + bodyHTML;
+}
+
+function getReportTitle(type) {
+  const map = {
+    executive: 'Executive Security Brief',
+    incident: 'Incident Analysis Report',
+    compliance: 'Compliance Audit Report',
+    threat: 'Threat Intelligence Digest'
+  };
+  return map[type] || 'Security Report';
+}
+
+function renderExecutiveReport(sevCounts, total, resolved, score) {
+  const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+  const openCritical = sevCounts.critical;
+
+  const topThreats = TW.alerts.filter(a => a.status !== 'resolved').slice(0, 5);
+
+  return `
+    <div class="report-section">
+      <div class="report-section-title">Security Posture Overview</div>
+      <div class="report-kpi-grid">
+        <div class="report-kpi ${openCritical > 3 ? 'critical' : 'good'}">
+          <div class="report-kpi-val">${openCritical}</div>
+          <div class="report-kpi-label">Critical Alerts</div>
+        </div>
+        <div class="report-kpi ${sevCounts.high > 5 ? 'high' : 'good'}">
+          <div class="report-kpi-val">${total}</div>
+          <div class="report-kpi-label">Total Events</div>
+        </div>
+        <div class="report-kpi ${resolutionRate < 60 ? 'high' : 'good'}">
+          <div class="report-kpi-val">${resolutionRate}%</div>
+          <div class="report-kpi-label">Resolution Rate</div>
+        </div>
+        <div class="report-kpi ${score < 70 ? 'critical' : score < 85 ? 'high' : 'good'}">
+          <div class="report-kpi-val">${score}</div>
+          <div class="report-kpi-label">Security Score</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Alert Severity Distribution</div>
+      <div class="sev-breakdown">
+        <div class="sev-row">
+          <div class="sev-dot" style="background:#ef4444; box-shadow: 0 0 6px #ef4444;"></div>
+          <div>
+            <div class="sev-row-label">Critical</div>
+            <div class="sev-bar-wrap"><div class="sev-bar-fill" style="width:${Math.min(100, sevCounts.critical * 10)}%; background:#ef4444;"></div></div>
+          </div>
+          <div class="sev-row-val">${sevCounts.critical}</div>
+        </div>
+        <div class="sev-row">
+          <div class="sev-dot" style="background:#f97316; box-shadow: 0 0 6px #f97316;"></div>
+          <div>
+            <div class="sev-row-label">High</div>
+            <div class="sev-bar-wrap"><div class="sev-bar-fill" style="width:${Math.min(100, sevCounts.high * 6)}%; background:#f97316;"></div></div>
+          </div>
+          <div class="sev-row-val">${sevCounts.high}</div>
+        </div>
+        <div class="sev-row">
+          <div class="sev-dot" style="background:#eab308; box-shadow: 0 0 6px #eab308;"></div>
+          <div>
+            <div class="sev-row-label">Medium</div>
+            <div class="sev-bar-wrap"><div class="sev-bar-fill" style="width:${Math.min(100, sevCounts.medium * 4)}%; background:#eab308;"></div></div>
+          </div>
+          <div class="sev-row-val">${sevCounts.medium}</div>
+        </div>
+        <div class="sev-row">
+          <div class="sev-dot" style="background:#10b981; box-shadow: 0 0 6px #10b981;"></div>
+          <div>
+            <div class="sev-row-label">Low / Info</div>
+            <div class="sev-bar-wrap"><div class="sev-bar-fill" style="width:${Math.min(100, sevCounts.low * 3)}%; background:#10b981;"></div></div>
+          </div>
+          <div class="sev-row-val">${sevCounts.low}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Top Active Threats</div>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Threat Name</th>
+            <th>Category</th>
+            <th>Source IP</th>
+            <th>Severity</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${topThreats.length ? topThreats.map((a, i) => `
+            <tr>
+              <td style="color:var(--text-3); font-family:var(--font-mono);">${i+1}</td>
+              <td style="font-weight:500; color:var(--text-1);">${a.label}</td>
+              <td>${a.category}</td>
+              <td style="font-family:var(--font-mono); font-size:10px;">${a.srcIp}</td>
+              <td><span class="badge badge-${a.sev}" style="font-size:9px;">${a.sev.toUpperCase()}</span></td>
+              <td><span style="color:${a.status==='new'?'#ef4444':a.status==='resolved'?'#10b981':'#eab308'}; font-size:10px; font-weight:600;">${a.status.toUpperCase()}</span></td>
+            </tr>`).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-3);">No active threats — system clean.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Executive Recommendations</div>
+      <div class="action-list">
+        <div class="action-item">
+          <div class="action-num">1</div>
+          <div class="action-body">
+            <div class="action-title">Enforce Multi-Factor Authentication (MFA) Across All Privileged Accounts</div>
+            <div class="action-desc">Current brute-force activity indicates credential stuffing attacks. Enforce MFA on all admin, VPN, and cloud console access immediately.</div>
+          </div>
+          <div class="action-priority high">URGENT</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num">2</div>
+          <div class="action-body">
+            <div class="action-title">Patch Management: Deploy CVE-2024-21413 and CVE-2024-1709 Fixes</div>
+            <div class="action-desc">Vulnerability scanning shows two active exploits targeting web infrastructure. Coordinate with DevOps to patch within 72h.</div>
+          </div>
+          <div class="action-priority high">HIGH</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num">3</div>
+          <div class="action-body">
+            <div class="action-title">Review and Harden Egress Firewall Rules</div>
+            <div class="action-desc">Data exfiltration patterns detected over DNS tunneling. Work with network team to block unauthorized DNS zones and implement DNS monitoring.</div>
+          </div>
+          <div class="action-priority medium">MEDIUM</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderIncidentReport(sevCounts, total) {
+  const criticalAlerts = TW.alerts.filter(a => a.sev === 'critical').slice(0, 4);
+
+  return `
+    <div class="report-section">
+      <div class="report-section-title">Incident Summary</div>
+      <div class="report-kpi-grid">
+        <div class="report-kpi critical"><div class="report-kpi-val">${sevCounts.critical + sevCounts.high}</div><div class="report-kpi-label">High+ Incidents</div></div>
+        <div class="report-kpi info"><div class="report-kpi-val">${total}</div><div class="report-kpi-label">Total Events</div></div>
+        <div class="report-kpi good"><div class="report-kpi-val">${TW.alerts.filter(a=>a.status==='resolved').length}</div><div class="report-kpi-label">Resolved</div></div>
+        <div class="report-kpi high"><div class="report-kpi-val">${TW.alerts.filter(a=>a.status==='new').length}</div><div class="report-kpi-label">Unacknowledged</div></div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">MITRE ATT&CK Coverage Map</div>
+      <div class="mitre-grid">
+        <div class="mitre-phase danger">Reconnaissance</div>
+        <div class="mitre-phase active">Initial Access</div>
+        <div class="mitre-phase active">Execution</div>
+        <div class="mitre-phase warn">Persistence</div>
+        <div class="mitre-phase active">Privilege Esc.</div>
+        <div class="mitre-phase danger">Defense Evasion</div>
+        <div class="mitre-phase active">Credential Access</div>
+        <div class="mitre-phase warn">Discovery</div>
+        <div class="mitre-phase active">Lateral Movement</div>
+        <div class="mitre-phase">Collection</div>
+        <div class="mitre-phase danger">C2</div>
+        <div class="mitre-phase active">Exfiltration</div>
+        <div class="mitre-phase warn">Impact</div>
+        <div class="mitre-phase">Resource Dev.</div>
+      </div>
+      <div style="display:flex; gap:16px; margin-top:10px; font-size:10px; color:var(--text-3);">
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:rgba(239,68,68,0.3);border:1px solid #ef4444;border-radius:2px;display:inline-block;"></span> Active Threat Stage</span>
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:rgba(249,115,22,0.3);border:1px solid #f97316;border-radius:2px;display:inline-block;"></span> Partial Coverage</span>
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:rgba(0,212,255,0.1);border:1px solid var(--cyan);border-radius:2px;display:inline-block;"></span> Detected &amp; Covered</span>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Critical Incident Details</div>
+      <table class="report-table">
+        <thead>
+          <tr><th>Incident ID</th><th>Type</th><th>Source</th><th>MITRE IDs</th><th>Impact</th><th>Time</th></tr>
+        </thead>
+        <tbody>
+          ${criticalAlerts.length ? criticalAlerts.map(a => `
+            <tr>
+              <td style="font-family:var(--font-mono);font-size:10px;color:var(--cyan);">${String(a.id).substring(0,12)}</td>
+              <td style="font-weight:500;color:var(--text-1);">${a.label}</td>
+              <td style="font-family:var(--font-mono);font-size:10px;">${a.srcIp}</td>
+              <td style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);">${(a.mitre||[]).slice(0,2).join(', ')}</td>
+              <td style="font-size:10px;color:#f97316;">${a.impact||'Unknown'}</td>
+              <td style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);">${TW.formatTime(a.ts)}</td>
+            </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text-3);">No critical incidents active.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Forensic Recommendations</div>
+      <div class="action-list">
+        <div class="action-item">
+          <div class="action-num">1</div>
+          <div class="action-body">
+            <div class="action-title">Isolate Compromised Endpoints Immediately</div>
+            <div class="action-desc">Endpoints showing C2 beaconing behavior must be quarantined via EDR before lateral movement escalates further.</div>
+          </div>
+          <div class="action-priority high">URGENT</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num">2</div>
+          <div class="action-body">
+            <div class="action-title">Collect Memory Artifacts from Affected Hosts</div>
+            <div class="action-desc">Perform live memory acquisition on hosts with ransomware indicators. Preserve evidence chain before any remediation action.</div>
+          </div>
+          <div class="action-priority high">HIGH</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num">3</div>
+          <div class="action-body">
+            <div class="action-title">Review SIEM Correlation Rules for Detection Gaps</div>
+            <div class="action-desc">Several stages (Collection, Resource Dev.) show no detection coverage. Update Sigma rules or create custom SIEM queries.</div>
+          </div>
+          <div class="action-priority medium">MEDIUM</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderComplianceReport(score) {
+  return `
+    <div class="report-section">
+      <div class="report-section-title">Compliance Scorecard</div>
+      <div class="compliance-grid">
+        <div class="compliance-card">
+          <div class="compliance-score" style="color:${score>85?'#10b981':score>70?'#eab308':'#ef4444'};">${score}%</div>
+          <div class="compliance-name">SOC 2 Type II</div>
+          <div class="compliance-status ${score>80?'pass':score>65?'warn':'fail'}">${score>80?'✓ PASSING':score>65?'⚠ WARNING':'✗ AT RISK'}</div>
+        </div>
+        <div class="compliance-card">
+          <div class="compliance-score" style="color:${score>78?'#10b981':'#eab308'};">${Math.max(60, score - 5)}%</div>
+          <div class="compliance-name">ISO 27001</div>
+          <div class="compliance-status ${score>78?'pass':'warn'}">${score>78?'✓ CERTIFIED':'⚠ MINOR GAPS'}</div>
+        </div>
+        <div class="compliance-card">
+          <div class="compliance-score" style="color:#eab308;">${Math.max(55, score - 12)}%</div>
+          <div class="compliance-name">NIST CSF</div>
+          <div class="compliance-status warn">⚠ GAPS FOUND</div>
+        </div>
+        <div class="compliance-card">
+          <div class="compliance-score" style="color:#10b981;">${Math.min(99, score + 4)}%</div>
+          <div class="compliance-name">PCI DSS v4.0</div>
+          <div class="compliance-status pass">✓ COMPLIANT</div>
+        </div>
+        <div class="compliance-card">
+          <div class="compliance-score" style="color:${score>75?'#10b981':'#ef4444'};">${Math.max(50, score - 8)}%</div>
+          <div class="compliance-name">GDPR / Data Privacy</div>
+          <div class="compliance-status ${score>75?'pass':'fail'}">${score>75?'✓ ADEQUATE':'✗ REMEDIATE'}</div>
+        </div>
+        <div class="compliance-card">
+          <div class="compliance-score" style="color:#10b981;">${Math.min(98, score + 2)}%</div>
+          <div class="compliance-name">HIPAA (if applicable)</div>
+          <div class="compliance-status pass">✓ COMPLIANT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Gap Analysis &amp; Remediation Roadmap</div>
+      <div class="action-list">
+        <div class="action-item">
+          <div class="action-num">1</div>
+          <div class="action-body">
+            <div class="action-title">NIST CSF — Identify Function: Asset Management Gaps</div>
+            <div class="action-desc">Asset inventory is incomplete. 23% of network endpoints are unmanaged. Implement automated asset discovery tool (CAASM) within Q3.</div>
+          </div>
+          <div class="action-priority high">HIGH</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num">2</div>
+          <div class="action-body">
+            <div class="action-title">GDPR Article 32 — Encryption at Rest Requirement</div>
+            <div class="action-desc">Audit reveals 3 data stores containing PII without encryption at rest. Migrate to AES-256 encrypted storage within 30 days.</div>
+          </div>
+          <div class="action-priority high">HIGH</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num">3</div>
+          <div class="action-body">
+            <div class="action-title">SOC 2 CC7.1 — Monitoring of Security Events</div>
+            <div class="action-desc">Current SIEM retention is 60 days. SOC 2 Type II requires 12-month retention. Expand to cold storage tier within Q4.</div>
+          </div>
+          <div class="action-priority medium">MEDIUM</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num">4</div>
+          <div class="action-body">
+            <div class="action-title">Conduct Annual Penetration Test (Required — Overdue)</div>
+            <div class="action-desc">Last penetration test was 14 months ago. Schedule a CREST-certified external pentest to meet ISO 27001:2022 clause 8.8 requirements.</div>
+          </div>
+          <div class="action-priority medium">MEDIUM</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Control Coverage Summary</div>
+      <table class="report-table">
+        <thead><tr><th>Control Domain</th><th>Framework</th><th>Controls Tested</th><th>Passed</th><th>Failed</th><th>Score</th></tr></thead>
+        <tbody>
+          <tr><td>Access Control</td><td style="font-size:9px; color:var(--text-3); font-family:var(--font-mono);">SOC 2 / ISO 27001</td><td>18</td><td style="color:#10b981;">16</td><td style="color:#ef4444;">2</td><td>89%</td></tr>
+          <tr><td>Incident Response</td><td style="font-size:9px; color:var(--text-3); font-family:var(--font-mono);">NIST CSF / SOC 2</td><td>12</td><td style="color:#10b981;">10</td><td style="color:#ef4444;">2</td><td>83%</td></tr>
+          <tr><td>Data Encryption</td><td style="font-size:9px; color:var(--text-3); font-family:var(--font-mono);">GDPR / PCI DSS</td><td>9</td><td style="color:#10b981;">7</td><td style="color:#ef4444;">2</td><td>78%</td></tr>
+          <tr><td>Change Management</td><td style="font-size:9px; color:var(--text-3); font-family:var(--font-mono);">SOC 2 / ISO 27001</td><td>7</td><td style="color:#10b981;">7</td><td style="color:#10b981;">0</td><td>100%</td></tr>
+          <tr><td>Asset Management</td><td style="font-size:9px; color:var(--text-3); font-family:var(--font-mono);">NIST CSF</td><td>11</td><td style="color:#eab308;">7</td><td style="color:#ef4444;">4</td><td>63%</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderThreatReport(sevCounts, total) {
+  const recentAlerts = TW.alerts.slice(0, 8);
+
+  return `
+    <div class="report-section">
+      <div class="report-section-title">Threat Landscape Overview</div>
+      <div class="report-kpi-grid">
+        <div class="report-kpi critical"><div class="report-kpi-val">${sevCounts.critical}</div><div class="report-kpi-label">Active APTs</div></div>
+        <div class="report-kpi info"><div class="report-kpi-val">47</div><div class="report-kpi-label">Unique IOCs</div></div>
+        <div class="report-kpi high"><div class="report-kpi-val">${total}</div><div class="report-kpi-label">Events Analyzed</div></div>
+        <div class="report-kpi good"><div class="report-kpi-val">12</div><div class="report-kpi-label">Blocked Countries</div></div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Threat Actor Profiles</div>
+      <div class="action-list">
+        <div class="action-item">
+          <div class="action-num" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444;">⚑</div>
+          <div class="action-body">
+            <div class="action-title">APT29 — Cozy Bear (Russia-Nexus)</div>
+            <div class="action-desc">Activity observed in last 7 days. TTPs include spearphishing via email, PowerShell-based C2 beaconing, and credential theft via LSASS memory dumping. MITRE Groups: G0016. Primary targets: Government, Defense Contractors.</div>
+          </div>
+          <div class="action-priority high">HIGH RISK</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num" style="background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.3);color:#f97316;">⚑</div>
+          <div class="action-body">
+            <div class="action-title">Lazarus Group (DPRK-Nexus)</div>
+            <div class="action-desc">Financial sector targeting confirmed. Using custom Trojan droppers delivered via LinkedIn job lures. Cryptocurrency theft and ransomware deployment. MITRE Groups: G0032.</div>
+          </div>
+          <div class="action-priority medium">MEDIUM RISK</div>
+        </div>
+        <div class="action-item">
+          <div class="action-num" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.3);color:#eab308;">⚑</div>
+          <div class="action-body">
+            <div class="action-title">Scattered Spider — UNC3944 (FIN)</div>
+            <div class="action-desc">Social engineering against IT helpdesk staff observed. Targeting SaaS platforms and cloud identities. Uses SIM-swapping and MFA fatigue attacks. MITRE Groups: G1015.</div>
+          </div>
+          <div class="action-priority low">MONITOR</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Top IOCs Observed (Last 7 Days)</div>
+      <table class="report-table">
+        <thead><tr><th>IOC Type</th><th>Value</th><th>Threat Actor</th><th>Confidence</th><th>First Seen</th><th>Status</th></tr></thead>
+        <tbody>
+          ${recentAlerts.slice(0,6).map(a => `
+            <tr>
+              <td style="color:var(--text-3);font-size:10px;">IP Address</td>
+              <td style="font-family:var(--font-mono);font-size:10px;color:var(--cyan);">${a.srcIp}</td>
+              <td style="font-size:10px;">Unknown APT</td>
+              <td><div style="display:flex;align-items:center;gap:6px;"><div style="width:${60+Math.floor(Math.random()*35)}px;height:4px;background:var(--border);border-radius:2px;"><div style="width:${60+Math.floor(Math.random()*35)}%;height:100%;background:#eab308;border-radius:2px;"></div></div><span style="font-size:10px;">${60+Math.floor(Math.random()*35)}%</span></div></td>
+              <td style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);">${TW.formatTime(a.ts)}</td>
+              <td><span class="badge badge-${a.sev}" style="font-size:9px;">ACTIVE</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">MITRE ATT&CK Technique Coverage</div>
+      <div class="mitre-grid">
+        <div class="mitre-phase danger">Recon T1595</div>
+        <div class="mitre-phase active">Phishing T1566</div>
+        <div class="mitre-phase active">PowerShell T1059</div>
+        <div class="mitre-phase warn">Sched. Task T1053</div>
+        <div class="mitre-phase active">LSASS Dump T1003</div>
+        <div class="mitre-phase danger">Masquerade T1036</div>
+        <div class="mitre-phase active">DNS Tunnel T1071</div>
+        <div class="mitre-phase warn">Net Discovery T1046</div>
+        <div class="mitre-phase active">Pass-The-Hash T1550</div>
+        <div class="mitre-phase active">Exfil DNS T1048</div>
+        <div class="mitre-phase danger">Ransomware T1486</div>
+        <div class="mitre-phase warn">DDoS T1498</div>
+        <div class="mitre-phase active">C2 Beacon T1095</div>
+        <div class="mitre-phase">Wipe T1561</div>
+      </div>
+    </div>`;
+}
+
+function refreshPreview() {
+  renderReport(currentTemplate);
+  showToast('Report Refreshed', 'Preview updated with latest simulation data.', 'info', 3000);
+}
+
+function printReport() {
+  window.print();
+}
+
+// PDF Export using html2pdf.js CDN
+function generatePDF() {
+  const btn = document.getElementById('btn-generate-pdf');
+  const progressBar = document.getElementById('export-progress-bar');
+  const progressFill = document.getElementById('export-progress-fill');
+
+  btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generating…';
+  progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
+
+  // Progress animation
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 18;
+    if (progress > 90) progress = 90;
+    progressFill.style.width = progress + '%';
+  }, 200);
+
+  // Load html2pdf library
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+  script.onerror = function() { console.warn('[CybeWatch] html2pdf CDN blocked. PDF export unavailable offline.'); };
+  script.onload = function() {
+    const element = document.getElementById('report-document');
+    const reportTypes = {
+      executive: 'executive-brief',
+      incident: 'incident-analysis',
+      compliance: 'compliance-audit',
+      threat: 'threat-intel-digest'
+    };
+    const now = new Date();
+    const dateTag = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    const filename = `cybewatch-report-${reportTypes[currentTemplate]}-${dateTag}.pdf`;
+
+    const opt = {
+      margin: [12, 14, 12, 14],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.92 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#010409',
+        logging: false
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(element).save().then(function() {
+      clearInterval(interval);
+      progressFill.style.width = '100%';
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export as PDF';
+      setTimeout(() => { progressBar.style.display = 'none'; progressFill.style.width = '0%'; }, 1500);
+
+      // Add to history
+      addToHistory(filename);
+      showToast('PDF Exported', `${filename} downloaded successfully.`, 'success', 5000);
+    }).catch(() => {
+      clearInterval(interval);
+      progressBar.style.display = 'none';
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export as PDF';
+      showToast('Export Failed', 'Could not generate PDF. Check network connection.', 'critical', 5000);
+    });
+  };
+  script.onerror = function() {
+    clearInterval(interval);
+    progressBar.style.display = 'none';
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export as PDF';
+    showToast('Network Error', 'Failed to load PDF library. Check internet connection.', 'critical', 5000);
+  };
+  document.head.appendChild(script);
+}
+
+function addToHistory(filename) {
+  reportHistory.unshift({ name: filename, time: new Date() });
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('report-history');
+  if (!reportHistory.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text-3);text-align:center;padding:16px 0;">No exports yet this session.</div>';
+    return;
+  }
+  el.innerHTML = reportHistory.slice(0, 5).map(r => `
+    <div class="history-item">
+      <div class="history-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="history-info">
+        <div class="history-name">${r.name}</div>
+        <div class="history-meta">${r.time.toLocaleTimeString()} — ${(Math.random()*0.4+0.2).toFixed(1)}MB PDF</div>
+      </div>
+      <div class="history-dl" title="Re-export" onclick="generatePDF()">↓ Re-export</div>
+    </div>`).join('');
+}
+
+function toggleUserMenu(){
+  const m=document.getElementById('user-menu');
+  if(m){m.remove();return;}
+  const menu=document.createElement('div');
+  menu.id='user-menu';
+  menu.style.cssText='position:fixed;bottom:60px;left:10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);min-width:180px;z-index:200;box-shadow:var(--shadow);';
+  const sess=TW.getSession();
+  menu.innerHTML=`<div style="padding:10px 14px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:600;color:var(--text-1)">${sess?sess.name:''}</div><div style="font-size:10px;color:var(--text-3);font-family:var(--font-mono)">${sess?sess.role.toUpperCase():''}</div></div>
+    <div class="dropdown-item" onclick="sessionStorage.removeItem('tw_session'); location.href='index.html';" style="font-size:12px;gap:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</div>`;
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',function rm(e){if(!menu.contains(e.target)){menu.remove();document.removeEventListener('click',rm);}}),100);
+}
+
+// Populate user card
+const _sess = TW.getSession();
+if(_sess) {
+  const av = document.getElementById('user-avatar');
+  const dn = document.getElementById('user-display-name');
+  const dr = document.getElementById('user-display-role');
+  if(av) av.textContent = _sess.name ? _sess.name[0].toUpperCase() : 'A';
+  if(dn) dn.textContent = _sess.name || 'Analyst';
+  if(dr) dr.textContent = (_sess.role || 'analyst').toUpperCase();
+}
+
+// Initial render
+renderReport('executive');
+</script>
+<script src="js/gemini-chat.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# System Files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Build
+dist/
+build/
+
+# IDE / Project
+.vscode/
+.idea/
+.gemini/
+brain/
+
+# Local Dev
+*.log
+tmp/
+
+# Environment / Secrets — NEVER commit these
+.env
+.env.*
+!.env.example

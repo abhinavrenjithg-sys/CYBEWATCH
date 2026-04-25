@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch — Sign In</title>
+<link rel="stylesheet" href="styles/base.css"/>
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;background:var(--bg-0);position:relative;}
+#bg-canvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.4;}
+.bg-glow-1 { position:fixed; top:-10%; right:-10%; width: 50%; height: 50%; background: radial-gradient(circle, rgba(14,165,233,0.15) 0%, transparent 70%); z-index:0; filter: blur(100px); }
+.bg-glow-2 { position:fixed; bottom:-10%; left:-10%; width: 50%; height: 50%; background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%); z-index:0; filter: blur(100px); }
+.login-wrap{position:relative;z-index:1;width:100%;max-width:440px;padding:20px; animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);}
+.login-card{background: rgba(var(--bg-1-rgb), 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-2); border-radius: 24px; overflow:hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);}
+.login-top{padding:40px 40px 30px;text-align:center;border-bottom:1px solid var(--border);}
+.login-logo{width:64px;height:64px;background:var(--grad-cyan-purple);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow: 0 10px 30px rgba(14,165,233,0.3);}
+.login-logo svg{width:32px;height:32px;color:#fff;}
+.login-title{font-size:26px;font-weight:800;color:var(--text-1);letter-spacing:-0.5px;}
+.login-subtitle{font-size:11px;color:var(--text-3);margin-top:6px;font-family:var(--font-mono);letter-spacing:1px;opacity:0.8;}
+.login-body{padding:30px 40px 40px;}
+.form-group{margin-bottom:20px;}
+.form-label{display:block;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-family:var(--font-mono);}
+.pass-wrapper{position:relative;}
+.pass-wrapper .input{padding-right:48px;}
+.pass-toggle{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-3);display:flex;align-items:center;transition:color var(--transition);opacity:0.6;}
+.pass-toggle:hover{color:var(--text-1);opacity:1;}
+.pass-toggle svg{width:18px;height:18px;}
+.login-error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--critical);padding:12px 16px;border-radius:12px;font-size:12px;margin-bottom:20px;display:none;animation:fadeIn 0.3s ease;}
+.btn-full{width:100%;justify-content:center;padding:14px;font-size:14px;font-weight:600;letter-spacing:0.5px;border-radius:12px;}
+.quick-login-section{padding:30px 40px;border-top:1px solid var(--border);background:rgba(var(--bg-2-rgb), 0.3);}
+.quick-label{font-family:var(--font-mono);font-size:9px;color:var(--text-4);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;text-align:center;}
+.quick-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.quick-login-btn{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);padding:8px 6px;cursor:pointer;text-align:center;transition:all var(--transition);font-family:var(--font-sans);}
+.quick-login-btn:hover{border-color:var(--cyan);background:var(--bg-3);}
+.quick-login-btn .ql-role{font-size:10px;font-weight:700;font-family:var(--font-mono);letter-spacing:0.5px;}
+.quick-login-btn .ql-desc{font-size:9px;color:var(--text-3);margin-top:2px;}
+.ql-admin{color:var(--purple);}
+.ql-analyst{color:var(--blue);}
+.ql-viewer{color:var(--low);}
+.security-notice{font-size:9px;color:var(--text-4);text-align:center;margin-top:16px;font-family:var(--font-mono);letter-spacing:0.3px;}
+.system-status{display:flex;justify-content:center;gap:12px;margin-top:20px;flex-wrap:wrap;}
+.csrf-notice{font-family:var(--font-mono);font-size:9px;color:var(--text-4);text-align:center;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="bg-glow-1"></div>
+<div class="bg-glow-2"></div>
+<canvas id="bg-canvas"></canvas>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-top">
+      <div class="login-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      </div>
+      <div class="login-title">CybeWatch<span style="background:var(--grad-cyan-purple);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent"> Enterprise</span></div>
+      <div class="login-subtitle">SECURITY OPERATIONS CENTER v2.4.1</div>
+    </div>
+    <div class="login-body">
+      <div id="login-error" class="login-error"></div>
+      <form id="login-form" autocomplete="off">
+        <input type="text" name="fake-username" style="display:none" autocomplete="username"/>
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email Address</label>
+          <div class="input-group">
+            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+            <input class="input" id="login-email" type="email" placeholder="admin@cybewatch.io" value="admin@cybewatch.io" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-pass">Password</label>
+          <div class="pass-wrapper">
+            <input class="input" id="login-pass" type="password" placeholder="••••••••" value="Admin@123"/>
+            <button type="button" class="pass-toggle" id="pass-toggle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="btn-login">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Sign In Securely
+        </button>
+      </form>
+    </div>
+    <div class="quick-login-section">
+      <div class="quick-label">&#9889; Quick Demo Access</div>
+      <div class="quick-btns">
+        <button class="quick-login-btn" data-role="admin" onclick="fillCreds('admin')">
+          <div class="ql-role ql-admin">&#9679; ADMIN</div>
+          <div class="ql-desc">Full access</div>
+        </button>
+        <button class="quick-login-btn" data-role="analyst" onclick="fillCreds('analyst')">
+          <div class="ql-role ql-analyst">&#9679; ANALYST</div>
+          <div class="ql-desc">SOC access</div>
+        </button>
+        <button class="quick-login-btn" data-role="viewer" onclick="fillCreds('viewer')">
+          <div class="ql-role ql-viewer">&#9679; VIEWER</div>
+          <div class="ql-desc">Read only</div>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="system-status">
+    <span class="pill pill-ok">Auth Service</span>
+    <span class="pill pill-ok">Threat Engine</span>
+    <span class="pill pill-ok">AI Model v3.2</span>
+    <span class="pill pill-warn">3 Active Incidents</span>
+  </div>
+  <div class="csrf-notice">Protected by CSRF tokens &middot; TLS 1.3 &middot; AES-256 encrypted session</div>
+</div>
+<script src="js/engine.js"></script>
+<script>
+initBgParticles=function(id){
+  const c=document.getElementById(id);if(!c)return;
+  const ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  window.addEventListener('resize',resize);resize();
+  const pts=Array.from({length:50},()=>({x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.2+.3,h:Math.random()>.5?200:280}));
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=c.width;if(p.x>c.width)p.x=0;if(p.y<0)p.y=c.height;if(p.y>c.height)p.y=0;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`hsla(${p.h},80%,65%,0.25)`;ctx.fill();});
+    requestAnimationFrame(draw);}
+  draw();
+};
+initBgParticles('bg-canvas');
+function fillCreds(role){
+  const creds={admin:{e:'admin@cybewatch.io',p:'Admin@123'},analyst:{e:'analyst@cybewatch.io',p:'Analyst@123'},viewer:{e:'viewer@cybewatch.io',p:'Viewer@123'}};
+  const c=creds[role];if(!c)return;
+  document.getElementById('login-email').value=c.e;
+  document.getElementById('login-pass').value=c.p;
+  // Auto-submit after a short delay so the user sees the fields fill
+  setTimeout(()=>document.getElementById('login-form').dispatchEvent(new Event('submit')),300);
+}
+// Pass toggle
+document.getElementById('pass-toggle').addEventListener('click',function(){
+  const p=document.getElementById('login-pass');
+  p.type=p.type==='password'?'text':'password';
+  this.innerHTML=p.type==='text'
+    ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+});
+// Form
+document.getElementById('login-form').addEventListener('submit',function(e){
+  e.preventDefault();
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const btn=document.getElementById('btn-login');
+  const errEl=document.getElementById('login-error');
+  const DB={
+    'admin@cybewatch.io':   {pass:'Admin@123',   name:'Alex Chen',    role:'admin',   avatar:'AC',dept:'SOC Leadership'},
+    'analyst@cybewatch.io': {pass:'Analyst@123', name:'Sara Miller',  role:'analyst', avatar:'SM',dept:'Threat Analysis'},
+    'viewer@cybewatch.io':  {pass:'Viewer@123',  name:'Mike Johnson', role:'viewer',  avatar:'MJ',dept:'Management'},
+  };
+  btn.disabled=true;btn.innerHTML='<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/></svg> Authenticating…';
+  errEl.style.display='none';
+  setTimeout(()=>{
+    const u=DB[email.toLowerCase()];
+    if(!u||u.pass!==pass){
+      errEl.textContent='Invalid credentials. Use one of the Quick Demo buttons below.';
+      errEl.style.display='block';
+      btn.disabled=false;
+      btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Sign In Securely';
+      return;
+    }
+    const session={email,name:u.name,role:u.role,avatar:u.avatar,dept:u.dept,loginAt:Date.now()};
+    sessionStorage.setItem('tw_session',JSON.stringify(session));
+    location.href='dashboard.html';
+  },800);
+});
+if(TW.getSession()) location.href='dashboard.html';
+</script>
+<script src="js/gemini-chat.js"></script>
+<script src="js/command-palette.js"></script>
+</body>
+</html>

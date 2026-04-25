@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+<script>
+window.addEventListener('error', function(e) {
+  const err = document.createElement('div');
+  err.style = 'position:fixed;top:0;left:0;z-index:99999;background:red;color:white;padding:20px;font-family:monospace;pointer-events:none;';
+  err.innerText = 'JS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+  document.body.appendChild(err);
+});
+</script>
+<script>
+window.addEventListener('error', function(e) {
+  fetch('http://localhost:9999/log?msg=' + encodeURIComponent(e.message + ' at ' + e.filename + ':' + e.lineno));
+});
+window.addEventListener('unhandledrejection', function(e) {
+  fetch('http://localhost:9999/log?msg=' + encodeURIComponent(e.reason));
+});
+</script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch — Threat Intelligence</title>
+<link rel="stylesheet" href="styles/base.css"/>
+<link rel="stylesheet" href="styles/dashboard.css"/>
+<style>
+body{overflow:hidden;}
+.intel-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg-1);flex-shrink:0;}
+.intel-tab{padding:12px 20px;font-size:12px;font-weight:500;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;transition:all var(--transition);}
+.intel-tab:hover{color:var(--text-2);}
+.intel-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.tab-content{display:none;flex:1;overflow-y:auto;min-height:0;}
+.tab-content.active{display:flex;flex-direction:column;}
+.intel-toolbar{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;}
+.confidence-bar{width:70px;height:5px;background:var(--bg-3);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;}
+.confidence-fill{height:100%;border-radius:2px;}
+.ioc-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--font-mono);font-size:10px;cursor:pointer;margin:2px;transition:all var(--transition);}
+.ioc-chip:hover{border-color:var(--border-2);background:var(--bg-4);}
+.ioc-chip.malicious{border-color:var(--critical);color:var(--critical);}
+.ioc-chip.suspicious{border-color:var(--medium);color:var(--medium);}
+.campaign-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;transition:border-color var(--transition);}
+.campaign-card:hover{border-color:var(--border-2);}
+.ttp-badge{display:inline-flex;padding:2px 6px;border-radius:3px;font-family:var(--font-mono);font-size:9px;background:var(--bg-3);color:#818cf8;border:1px solid var(--border-2);margin:2px;}
+.ueba-timeline-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-2);}
+.anomaly-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand" style="text-decoration: none; display: flex; align-items: center; gap: 12px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+      <div class="brand-text"><div class="brand-name">CybeWatch</div><div class="brand-version">ENTERPRISE v2.4 � Team Glanzee</div></div>
+    </a>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-item-text">Home</span></a>
+      <div class="nav-section-label">Operations</div>
+      <a class="nav-item" data-nav="dashboard"     href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span class="nav-item-text">Dashboard</span></a>
+      <a class="nav-item" data-nav="topology" href="topology.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="nav-item-text">Topology</span></a>
+      <a class="nav-item" data-nav="alerts"        href="alerts.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="nav-item-text">Alerts</span><span class="nav-badge" id="alert-nav-badge" style="display:none"></span></a>
+      <a class="nav-item" data-nav="investigation" href="investigation.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="nav-item-text">Investigation</span></a>
+      <a class="nav-item" data-nav="playbooks" href="playbooks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="2" y1="12" x2="5" y2="12"/></svg><span class="nav-item-text">Playbooks</span></a>
+      <div class="nav-section-label">Intelligence</div>
+      <a class="nav-item active" data-nav="intelligence" href="intelligence.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg><span class="nav-item-text">Threat Intel</span></a>
+      <a class="nav-item" data-nav="reports" href="reports.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="nav-item-text">Reports</span>
+      </a>      <a class="nav-item" data-nav="about" href="about.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="nav-item-text">About Team</span></a>
+    <div class="nav-section-label">System</div>
+      <a class="nav-item" data-nav="settings" href="settings.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span class="nav-item-text">Settings</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer"><div class="team-credit">CybeWatch by <span>Team Glanzee</span><br/>Abhinav R &amp; SF Melena</div>
+      <div class="user-card"><div class="avatar" id="user-avatar">A</div><div class="user-info"><div class="user-name" id="user-display-name">…</div><div class="user-role" id="user-display-role">ROLE</div></div></div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <div class="topbar">
+      <button class="topbar-toggle" id="sidebar-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="threat-level-indicator">
+        <span class="tl-label">THREAT</span>
+        <div class="tl-bars"><div class="tl-bar" id="tl-bar-1"></div><div class="tl-bar" id="tl-bar-2"></div><div class="tl-bar" id="tl-bar-3"></div><div class="tl-bar" id="tl-bar-4"></div><div class="tl-bar" id="tl-bar-5"></div></div>
+        <span class="tl-text" id="tl-text">—</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-actions">
+        <span class="pill pill-ok">Intel Feed Live</span>
+        <button class="notif-btn" id="notif-toggle-btn" onclick="toggleNotifications()" title="Notifications ON — click to mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><div class="notif-dot"></div></button>
+        <button class="notif-btn" id="theme-toggle-btn" title="Toggle Theme" onclick="TW.toggleTheme()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg></button>
+        <div class="topbar-clock" id="topbar-clock">00:00:00</div>
+        <button class="btn btn-ghost" onclick="location.href='dashboard.html'" style="padding:5px 10px;font-size:11px;">← Dashboard</button>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="intel-tabs">
+      <div class="intel-tab active" onclick="switchTab('ioc')">IOC Feed</div>
+      <div class="intel-tab" onclick="switchTab('news')">Live News</div>
+      <div class="intel-tab" onclick="switchTab('campaigns')">APT Campaigns</div>
+      <div class="intel-tab" onclick="switchTab('ueba')">UEBA Analytics</div>
+      <div class="intel-tab" onclick="switchTab('malware')">Malware Signatures</div>
+      <div class="intel-tab" onclick="switchTab('darkweb')" style="color:var(--critical);">Dark Web OSINT</div>
+    </div>
+
+    <!-- IOC FEED TAB -->
+    <div class="tab-content active" id="tab-ioc">
+      <div class="intel-toolbar">
+        <div class="search-box" style="display:flex;align-items:center;gap:8px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius-xs);padding:6px 12px;min-width:280px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--text-3);flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="ioc-search" placeholder="Search IP, domain, hash…" oninput="filterIOC()" style="background:none;border:none;outline:none;color:var(--text-1);font-size:12px;width:100%;font-family:var(--font-sans);"/>
+        </div>
+        <select id="ioc-type-filter" onchange="filterIOC()" style="background:var(--bg-2);border:1px solid var(--border-2);color:var(--text-2);padding:6px 10px;border-radius:var(--radius-xs);font-size:11px;font-family:var(--font-sans);">
+          <option value="all">All Types</option><option value="IP">IP Address</option><option value="Domain">Domain</option><option value="Hash">File Hash</option><option value="URL">URL</option>
+        </select>
+        <select id="ioc-conf-filter" onchange="filterIOC()" style="background:var(--bg-2);border:1px solid var(--border-2);color:var(--text-2);padding:6px 10px;border-radius:var(--radius-xs);font-size:11px;font-family:var(--font-sans);">
+          <option value="all">All Confidence</option><option value="high">High (80%+)</option><option value="medium">Medium (50-79%)</option><option value="low">Low (&lt;50%)</option>
+        </select>
+        <div style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-3);" id="ioc-count">Loading…</div>
+        <button class="btn btn-ghost" onclick="addIOC()" style="font-size:11px;padding:5px 10px;" data-require-perm="investigate">+ Add IOC</button>
+      </div>
+      <div style="overflow:auto;flex:1;">
+        <table class="data-table" id="ioc-table">
+          <thead><tr>
+            <th>Type</th><th>Indicator</th><th>Description</th><th>Country</th><th>ASN</th>
+            <th>Confidence</th><th>Tags</th><th>Last Seen</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="ioc-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- LIVE NEWS TAB -->
+    <div class="tab-content" id="tab-news">
+      <div class="intel-toolbar" style="justify-content:space-between;">
+        <div style="font-size:12px;color:var(--text-2);">Real-time Cybersecurity News Feed</div>
+        <button class="btn btn-ghost" onclick="fetchLiveNews()" style="padding:4px 8px;font-size:10px;">↻ Refresh</button>
+      </div>
+      <div style="padding:16px;flex:1;overflow-y:auto;" id="news-list">
+        <div class="empty-state">Loading live threat intelligence feeds...</div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS TAB -->
+    <div class="tab-content" id="tab-campaigns">
+      <div style="padding:16px;flex:1;overflow-y:auto;">
+        <div id="campaigns-list"></div>
+      </div>
+    </div>
+
+    <!-- UEBA TAB -->
+    <div class="tab-content" id="tab-ueba">
+      <div style="display:grid;grid-template-columns:340px 1fr;flex:1;overflow:hidden;min-height:0;">
+        <div style="border-right:1px solid var(--border);overflow-y:auto;">
+          <div style="padding:10px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;position:sticky;top:0;background:var(--bg-1);z-index:1;">
+            <input class="input" placeholder="Search users…" id="ueba-search" oninput="filterUEBA()" style="font-size:11px;"/>
+          </div>
+          <div id="ueba-user-list"></div>
+        </div>
+        <div style="overflow-y:auto;padding:16px;" id="ueba-detail">
+          <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><p>Select a user to view behavior analytics</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MALWARE TAB -->
+    <div class="tab-content" id="tab-malware">
+      <div style="padding:16px;flex:1;overflow-y:auto;">
+        <div id="malware-list"></div>
+      </div>
+    </div>
+
+    <!-- DARK WEB SCANNER TAB -->
+    <div class="tab-content" id="tab-darkweb" style="background:#02050a;flex:1;position:relative;">
+      <div style="padding:20px;max-width:800px;margin:0 auto;width:100%;display:flex;flex-direction:column;height:100%;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <h2 style="font-family:var(--font-mono);color:var(--critical);letter-spacing:2px;margin:0;font-size:20px;">OSINT DEEP WEB SCANNER</h2>
+          <p style="color:var(--text-3);font-size:12px;margin-top:6px;">Query illicit marketplaces and leaked databases for compromised credentials.</p>
+        </div>
+        
+        <div style="display:flex;gap:12px;margin-bottom:20px;">
+          <input id="dw-domain-input" type="text" placeholder="Enter target domain (e.g., glanzee.com)" style="flex:1;background:#0a1528;border:1px solid rgba(255,45,85,0.4);border-radius:4px;padding:12px 16px;color:#fff;font-family:var(--font-mono);font-size:14px;outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,0.5);">
+          <button onclick="startDarkWebScan()" class="btn btn-danger" style="padding:0 24px;font-family:var(--font-mono);font-weight:bold;letter-spacing:1px;white-space:nowrap;">INITIATE SCAN</button>
+        </div>
+        
+        <div id="dw-terminal" style="flex:1;background:#000;border:1px solid #1a1a1a;border-radius:6px;padding:16px;font-family:var(--font-mono);font-size:12px;color:#0f0;overflow-y:auto;box-shadow:inset 0 0 20px rgba(0,0,0,0.8);line-height:1.6;">
+          <div style="color:#666;">Ready to scan surface, deep, and dark web vectors. Waiting for input...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add IOC Modal -->
+<div id="add-ioc-modal" style="display:none;position:fixed;inset:0;z-index:9999;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);" onclick="closeIOCModal()"></div>
+  <div style="position:relative;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;background:var(--bg-1);border:1px solid var(--border-2);border-radius:12px;padding:24px;box-shadow:var(--shadow-lg);">
+    <h3 style="margin-bottom:16px;color:var(--text-1);">Add New Indicator</h3>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;color:var(--text-3);margin-bottom:6px;">Indicator (IP, Domain, Hash, or URL)</label>
+      <input type="text" id="new-ioc-val" placeholder="e.g. 1.2.3.4 or evil.com" style="width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:4px;padding:8px 12px;color:var(--text-1);outline:none;">
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:12px;">
+      <button class="btn btn-ghost" onclick="closeIOCModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitIOC()">Add Indicator</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script>
+if(!TW.requireAuth()) location.href='index.html';
+
+function switchTab(t){
+  document.querySelectorAll('.intel-tab').forEach((el,i)=>{el.classList.toggle('active',['ioc','news','campaigns','ueba','malware','darkweb'][i]===t);});
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t === 'news' && !window._newsFetched) fetchLiveNews();
+}
+
+window.startDarkWebScan = function() {
+  const domain = document.getElementById('dw-domain-input').value.trim() || 'example.com';
+  const term = document.getElementById('dw-terminal');
+  term.innerHTML = '';
+  
+  const seq = [
+    `[SYSTEM] Initializing TOR routing protocol via 3 exit nodes...`,
+    `[SYSTEM] Bypassing CAPTCHA gates on illicit marketplaces...`,
+    `[SCAN] Scraping RaidForums v2 archives...`,
+    `[SCAN] Querying Genesis Market ledger for "${domain}"...`,
+    `[SCAN] Searching XSS.is russian localized dumps...`,
+    `[ALERT] MATCH FOUND in "Comb21_List.txt" [94.2% confidence]`,
+    `[ALERT] MATCH FOUND in "Telegram_Stealer_Logs_2025" [88.1% confidence]`,
+    `<br/><b>[RESULTS] Decrypting leaked credentials for ${domain}:</b>`,
+    `<span style="color:#f97316;">admin@${domain} : $2b$12$xQx... (BCRYPT) - [LEAKED 2 DAYS AGO]</span>`,
+    `<span style="color:#f97316;">hr_portal@${domain} : Winter2024! (CLEARTEXT) - [INFOLER STEALER]</span>`,
+    `<span style="color:#f97316;">sysadmin@${domain} : $argon2id$v=1... - [EXPLOIT DATABASE OVERFLOW]</span>`,
+    `<span style="color:#f97316;">marketing@${domain} : password123 (CLEARTEXT) - [COMB LEAK]</span>`,
+    `<br/><span style="color:var(--critical);"><b>[CRITICAL] 4 active credentials exposed. Immediate password rotation policy required.</b></span>`
+  ];
+  
+  let i = 0;
+  function processNext() {
+    if(i < seq.length) {
+      if(term.innerHTML !== '') term.innerHTML += '<br/>';
+      term.innerHTML += seq[i];
+      term.scrollTop = term.scrollHeight;
+      i++;
+      setTimeout(processNext, Math.random() * 800 + 400); // 400-1200ms delay per line
+    }
+  }
+  processNext();
+};
+
+
+async function fetchLiveNews() {
+  const container = document.getElementById('news-list');
+  container.innerHTML = '<div class="empty-state">Loading live threat intelligence feeds via RSS...</div>';
+  try {
+    const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.cisa.gov/cybersecurity-advisories/all.xml');
+    const data = await res.json();
+    if(data.status === 'ok') {
+      window._newsFetched = true;
+      container.innerHTML = `<div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill, minmax(400px,1fr));">` + data.items.map(i => `
+        <div class="campaign-card" style="display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;" onclick="window.open('${i.link}', '_blank')">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-1);margin-bottom:6px;">${i.title}</div>
+            <div style="font-size:11px;color:var(--text-3);line-height:1.4;">${i.description.replace(/<[^>]+>/g, '').substring(0, 150)}...</div>
+          </div>
+          <div style="font-size:10px;color:var(--cyan);font-family:var(--font-mono);margin-top:12px;border-top:1px solid var(--border);padding-top:8px;">${new Date(i.pubDate).toLocaleString()} · CISA Advisory Alerts</div>
+        </div>
+      `).join('') + `</div>`;
+    } else throw new Error("RSS Proxy Failed");
+  } catch(e) {
+    container.innerHTML = '<div class="empty-state">Failed to reach external RSS feed. Network restriction active.</div>';
+  }
+}
+
+/* ─── IOC DATA ─── */
+function rndIP(){return `${r(1,223)}.${r(1,254)}.${r(1,254)}.${r(1,254)}`;}
+function r(a,b){return Math.floor(Math.random()*(b-a+1)+a);}
+const COUNTRIES=['Russia','China','North Korea','Iran','Romania','Ukraine','Brazil','Nigeria','USA','Netherlands','Germany'];
+const ASNS=['AS13335 Cloudflare','AS15169 Google','AS55836 Reliablenet','AS208091 Frantech','AS16276 OVH','AS200651 Privax','AS14061 DigitalOcean'];
+const TAGS_POOL=[['Tor Exit Node','Anonymization'],['C2 Server','RAT'],['Phishing','Credential Harvester'],['Botnet','DDoS'],['Ransomware','LockBit'],['APT-29','Cozy Bear'],['Scanner','Shodan'],['Malware Dropper','Loader'],['Brute Force','SSH'],['SQLi','Web Attack']];
+
+let iocData=[];
+function genIOC(i){
+  const types=['IP','IP','IP','Domain','Domain','Hash','URL'];
+  const t=types[r(0,types.length-1)];
+  const conf=r(20,99);
+  let ind='';
+  if(t==='IP') ind=rndIP();
+  else if(t==='Domain') ind=`${['update','cdn','api','auth','mail','login'][r(0,5)]}.${['secure','corp','systems','tech','net'][r(0,4)]}.${['ru','cn','io','top','xyz'][r(0,4)]}`;
+  else if(t==='Hash') ind=Array.from({length:32},()=>'0123456789abcdef'[r(0,15)]).join('');
+  else ind=`http://${rndIP()}/payload/${Array.from({length:8},()=>'abcdefgh'[r(0,7)]).join('')}.exe`;
+  return {id:i,type:t,indicator:ind,desc:['Known C2 infrastructure','Tor exit node used in attacks','Ransomware payload distribution','Phishing kit hosting','Botnet C2 beacon','Credential harvesting site','Exploit kit landing page'][r(0,6)],country:COUNTRIES[r(0,COUNTRIES.length-1)],asn:ASNS[r(0,ASNS.length-1)],confidence:conf,tags:TAGS_POOL[r(0,TAGS_POOL.length-1)],lastSeen:Date.now()-r(0,7200000)};
+}
+for(let i=1;i<=60;i++) iocData.push(genIOC(i));
+
+function confColor(c){return c>=80?'var(--critical)':c>=50?'var(--medium)':'var(--low)';}
+function filterIOC(){
+  const q=(document.getElementById('ioc-search').value||'').toLowerCase();
+  const tf=document.getElementById('ioc-type-filter').value;
+  const cf=document.getElementById('ioc-conf-filter').value;
+  let data=[...iocData];
+  if(tf!=='all') data=data.filter(d=>d.type===tf);
+  if(cf==='high') data=data.filter(d=>d.confidence>=80);
+  else if(cf==='medium') data=data.filter(d=>d.confidence>=50&&d.confidence<80);
+  else if(cf==='low') data=data.filter(d=>d.confidence<50);
+  if(q) data=data.filter(d=>(d.indicator+d.desc+d.country+d.tags.join('')).toLowerCase().includes(q));
+  document.getElementById('ioc-count').textContent=`${data.length} indicators`;
+  document.getElementById('ioc-tbody').innerHTML=data.map(d=>`
+    <tr onclick="searchIOC('${d.indicator}')">
+      <td><span class="tag">${d.type}</span></td>
+      <td style="font-family:var(--font-mono);font-size:10px;color:${d.confidence>=80?'var(--critical)':'var(--cyan)'};">${d.indicator.length>40?d.indicator.substring(0,40)+'…':d.indicator}</td>
+      <td style="color:var(--text-2);font-size:11px;">${d.desc}</td>
+      <td style="font-size:11px;color:var(--text-3);">${d.country}</td>
+      <td style="font-size:10px;color:var(--text-3);font-family:var(--font-mono);">${d.asn.substring(0,18)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${d.confidence}%;background:${confColor(d.confidence)};"></div></div>
+          <span style="font-family:var(--font-mono);font-size:10px;color:${confColor(d.confidence)};">${d.confidence}%</span>
+        </div>
+      </td>
+      <td>${d.tags.map(t=>`<span class="tag">${t}</span>`).join(' ')}</td>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--text-3);">${TW.formatTime(d.lastSeen)}</td>
+      <td><button class="btn btn-ghost" onclick="event.stopPropagation();blockIOC(${d.id})" style="padding:3px 7px;font-size:10px;" data-require-perm="respond">Block</button></td>
+    </tr>`).join('');
+  applyRoleUI();
+}
+function searchIOC(ind){showToast('IOC Lookup',`Querying threat intelligence for: ${ind.substring(0,40)}…`,'info',4000);}
+function blockIOC(id){const d=iocData.find(x=>x.id===id);if(d){showToast('Blocked',`${d.indicator} added to block list`,'success');}}
+function addIOC(){
+  document.getElementById('add-ioc-modal').style.display='block';
+  document.getElementById('new-ioc-val').focus();
+}
+function closeIOCModal(){
+  document.getElementById('add-ioc-modal').style.display='none';
+  document.getElementById('new-ioc-val').value='';
+}
+function submitIOC(){
+  const ind=document.getElementById('new-ioc-val').value.trim();
+  if(!ind){ closeIOCModal(); return; }
+  const newIoc=genIOC(iocData.length+1);
+  newIoc.indicator=ind;
+  newIoc.type=ind.match(/^\d{1,3}(\.\d{1,3}){3}$/)?'IP':ind.includes('http')?'URL':ind.length===32?'Hash':'Domain';
+  iocData.unshift(newIoc);
+  filterIOC();
+  closeIOCModal();
+  showToast('IOC Added',`${ind} added to threat intelligence feed`,'success');
+}
+
+/* ─── CAMPAIGNS ─── */
+const CAMPAIGNS=[
+  {name:'APT-29 / Cozy Bear',origin:'Russia',active:true,target:'Government, Energy, Finance',ttps:['T1566','T1078','T1021','T1071','T1055'],tools:['Cobalt Strike','SUNBURST','WellMess'],summary:'Russian SVR-linked group conducting long-term espionage. Currently targeting energy sector with spear phishing and supply chain attacks.',risk:'critical',iocs:15,firstSeen:'2018-03-01',lastSeen:new Date().toISOString().split('T')[0]},
+  {name:'APT-41 / Winnti',origin:'China',active:true,target:'Healthcare, Technology, Telecom',ttps:['T1190','T1059','T1133','T1486'],tools:['ShadowPad','Speculoos','PlugX'],summary:'Dual espionage and financially motivated group. Exploiting public-facing applications and deploying ransomware as cover.',risk:'high',iocs:22,firstSeen:'2012-01-01',lastSeen:new Date().toISOString().split('T')[0]},
+  {name:'Lazarus Group',origin:'North Korea',active:true,target:'Finance, Cryptocurrency, Defense',ttps:['T1566','T1059','T1486','T1041'],tools:['BlindingCan','HopLight','ELECTRICFISH'],summary:'DPRK state-sponsored group focused on cryptocurrency theft and financial system infiltration to fund regime activities.',risk:'critical',iocs:34,firstSeen:'2009-01-01',lastSeen:new Date().toISOString().split('T')[0]},
+  {name:'Charming Kitten / APT-35',origin:'Iran',active:true,target:'Academia, Journalists, Government',ttps:['T1566','T1078','T1213','T1530'],tools:['RULER','CharmPower','BellaCiao'],summary:'Iranian IRGC-linked group conducting credential harvesting against researchers, journalists, and policy professionals.',risk:'high',iocs:19,firstSeen:'2014-01-01',lastSeen:new Date().toISOString().split('T')[0]},
+  {name:'LockBit 3.0 Ransomware',origin:'Unknown',active:true,target:'All Sectors (Opportunistic)',ttps:['T1486','T1490','T1562'],tools:['LockBit 3.0','StealBit','Cobalt Strike'],summary:'Leading ransomware-as-a-service operation. Currently running a major campaign targeting financial sector with double extortion.',risk:'critical',iocs:41,firstSeen:'2019-09-01',lastSeen:new Date().toISOString().split('T')[0]},
+];
+function renderCampaigns(){
+  document.getElementById('campaigns-list').innerHTML=CAMPAIGNS.map(c=>`
+    <div class="campaign-card">
+      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+            <span style="font-size:15px;font-weight:700;color:var(--text-1);">${c.name}</span>
+            <span class="badge badge-${c.risk}">${c.risk.toUpperCase()}</span>
+            ${c.active?'<span class="pill pill-danger" style="font-size:8px;">ACTIVE</span>':'<span class="pill pill-ok" style="font-size:8px;">CONCLUDED</span>'}
+          </div>
+          <div style="font-size:11px;color:var(--text-2);line-height:1.6;margin-bottom:10px;">${c.summary}</div>
+          <div style="display:flex;gap:20px;font-size:10px;color:var(--text-3);margin-bottom:10px;flex-wrap:wrap;">
+            <span>🌍 Origin: <b style="color:var(--text-2)">${c.origin}</b></span>
+            <span>🎯 Targets: <b style="color:var(--text-2)">${c.target}</b></span>
+            <span>📡 IOCs: <b style="color:var(--cyan)">${c.iocs}</b></span>
+            <span>🗓 Active since: <b style="color:var(--text-2)">${c.firstSeen}</b></span>
+          </div>
+          <div style="margin-bottom:8px;"><span style="font-size:10px;color:var(--text-3);margin-right:6px;font-family:var(--font-mono);">MITRE:</span>${c.ttps.map(t=>`<span class="ttp-badge">${t}</span>`).join('')}</div>
+          <div><span style="font-size:10px;color:var(--text-3);margin-right:6px;font-family:var(--font-mono);">TOOLS:</span>${c.tools.map(t=>`<span class="tag">${t}</span>`).join(' ')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button class="btn btn-danger" onclick="if(TW.requirePro('Automated Playbook Execution')) showToast('Playbook','Activating playbook for ${c.name}…','critical',6000)" style="font-size:11px;padding:6px 12px;" data-require-perm="respond">Activate Playbook</button>
+          <button class="btn btn-ghost" onclick="showToast('IOCs','Exporting ${c.iocs} IOCs for ${c.name}','success',4000)" style="font-size:11px;padding:6px 12px;">Export IOCs</button>
+        </div>
+      </div>
+    </div>`).join('');
+  applyRoleUI();
+}
+
+/* ─── UEBA ─── */
+const UEBA_USERS=[
+  {name:'m.okonkwo',dept:'Finance',risk:92,riskLevel:'critical',logins:127,failedLogins:23,anomalies:8,lastLogin:'02:34 AM (unusual)',location:'Nigeria (unusual)',devices:3,dataAccess:'847 restricted files',alerts:'Insider threat pattern detected'},
+  {name:'admin.chen',dept:'IT Admin',risk:67,riskLevel:'high',logins:89,failedLogins:4,anomalies:3,lastLogin:'11:22 PM',location:'Russia (unusual)',devices:2,dataAccess:'Normal',alerts:'Login from unusual country'},
+  {name:'k.petrov',dept:'R&D',risk:54,riskLevel:'medium',logins:45,failedLogins:8,anomalies:2,lastLogin:'08:45 AM',location:'Romania (unusual)',devices:1,dataAccess:'180 sensitive files',alerts:'Multiple failed MFA attempts'},
+  {name:'sara.miller',dept:'SOC',risk:12,riskLevel:'low',logins:203,failedLogins:1,anomalies:0,lastLogin:'Today 09:15 AM',location:'New York (normal)',devices:2,dataAccess:'Normal',alerts:'None'},
+  {name:'devops.raj',dept:'DevOps',risk:21,riskLevel:'low',logins:156,failedLogins:2,anomalies:0,lastLogin:'Today 08:30 AM',location:'Mumbai (normal)',devices:3,dataAccess:'Normal',alerts:'None'},
+  {name:'l.santos',dept:'Finance',risk:34,riskLevel:'medium',logins:77,failedLogins:5,anomalies:1,lastLogin:'Yesterday 11:55 PM',location:'São Paulo (normal)',devices:2,dataAccess:'67 sensitive files (weekend)',alerts:'Weekend access to financial data'},
+  {name:'a.mueller',dept:'Legal',risk:8,riskLevel:'low',logins:95,failedLogins:0,anomalies:0,lastLogin:'Today 07:55 AM',location:'Berlin (normal)',devices:1,dataAccess:'Normal',alerts:'None'},
+  {name:'t.yamamoto',dept:'Management',risk:18,riskLevel:'low',logins:62,failedLogins:1,anomalies:0,lastLogin:'Today 10:20 AM',location:'Tokyo (normal)',devices:2,dataAccess:'Normal',alerts:'None'},
+];
+
+let currentUEBAUser=null;
+function filterUEBA(){
+  const q=(document.getElementById('ueba-search').value||'').toLowerCase();
+  const data=UEBA_USERS.filter(u=>(u.name+u.dept).toLowerCase().includes(q)||!q);
+  document.getElementById('ueba-user-list').innerHTML=data.map(u=>`
+    <div class="ueba-user-item ${u.name===currentUEBAUser?'selected':''}" onclick="openUEBAUser('${u.name}')">
+      <div class="avatar" style="background:${u.risk>70?'linear-gradient(135deg,#ef4444,#f97316)':u.risk>40?'linear-gradient(135deg,#eab308,#d97706)':'linear-gradient(135deg,#10b981,#0d9488)'};">${u.name.charAt(0).toUpperCase()}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          <span style="font-size:12px;font-weight:600;color:var(--text-1);font-family:var(--font-mono);">${u.name}</span>
+          <span class="risk-score-pill risk-${u.riskLevel}">${u.risk}</span>
+        </div>
+        <div style="font-size:10px;color:var(--text-3);">${u.dept} · ${u.anomalies} anomal${u.anomalies!==1?'ies':'y'}</div>
+      </div>
+    </div>`).join('');
+}
+
+function openUEBAUser(name){
+  if(!TW.requirePro('User Behavioral Analytics (UEBA)')){
+    switchTab('ioc'); // Revert tab if blocked
+    return;
+  }
+  currentUEBAUser=name;
+  filterUEBA();
+  const u=UEBA_USERS.find(x=>x.name===name);
+  if(!u) return;
+  const riskColor=u.risk>70?'var(--critical)':u.risk>40?'var(--medium)':'var(--low)';
+  document.getElementById('ueba-detail').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;">
+      <div class="avatar" style="width:52px;height:52px;font-size:20px;background:${u.risk>70?'linear-gradient(135deg,#ef4444,#f97316)':u.risk>40?'linear-gradient(135deg,#eab308,#d97706)':'linear-gradient(135deg,#10b981,#0d9488)'};">${u.name.charAt(0).toUpperCase()}</div>
+      <div style="flex:1;">
+        <div style="font-size:20px;font-weight:700;color:var(--text-1);font-family:var(--font-mono);">${u.name}</div>
+        <div style="font-size:12px;color:var(--text-3);">${u.dept} Department</div>
+      </div>
+      <div style="text-align:center;padding:12px 20px;background:var(--bg-2);border:1px solid ${riskColor+'44'};border-radius:var(--radius-sm);">
+        <div style="font-family:var(--font-mono);font-size:36px;font-weight:800;color:${riskColor};">${u.risk}</div>
+        <div style="font-size:10px;color:var(--text-3);">RISK SCORE</div>
+      </div>
+    </div>
+    
+    <div style="margin-bottom:16px;">
+      <div class="drawer-section-title">Peer Risk Clustering</div>
+      <div style="height:40px;width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--border-2);border-radius:4px;position:relative;overflow:hidden;">
+        <!-- Heatmap background gradient -->
+        <div style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(16,185,129,0.1) 0%, rgba(234,179,8,0.1) 50%, rgba(2ef,68,68,0.2) 100%);"></div>
+        <!-- Reference dots for peer group -->
+        ${UEBA_USERS.map(user=>`<div style="position:absolute;left:${user.risk}%;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);"></div>`).join('')}
+        <!-- Active User dot -->
+        <div style="position:absolute;left:${u.risk}%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:none;border:2px solid #fff;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 0 10px ${riskColor};">
+          <div style="width:6px;height:6px;background:${riskColor};border-radius:50%;"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-3);margin-top:4px;font-family:var(--font-mono);">
+        <span>0</span><span>PEER GROUP PERCENTILE</span><span>100</span>
+      </div>
+    </div>
+    ${u.risk>60?`<div style="background:var(--critical-bg);border:1px solid rgba(255,45,85,0.3);border-radius:var(--radius-xs);padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--critical);">⚠ ${u.alerts}</div>`:''}
+    <div class="drawer-section-title">Behavioral Metrics</div>
+    <div class="detail-grid" style="margin-bottom:16px;">
+      <div class="detail-item"><div class="detail-item-label">Total Logins (30d)</div><div class="detail-item-val">${u.logins}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Failed Logins</div><div class="detail-item-val ${u.failedLogins>5?'danger':''}">${u.failedLogins}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Last Login</div><div class="detail-item-val ${u.lastLogin.includes('unusual')||u.lastLogin.includes('AM')?'warning':''}">${u.lastLogin}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Login Location</div><div class="detail-item-val ${u.location.includes('unusual')?'danger':''}">${u.location}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Devices Used</div><div class="detail-item-val">${u.devices}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Anomalies (7d)</div><div class="detail-item-val ${u.anomalies>3?'danger':u.anomalies>0?'warning':'success'}">${u.anomalies}</div></div>
+    </div>
+    <div class="drawer-section-title">Data Access</div>
+    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);padding:12px;font-size:12px;color:${u.dataAccess!=='Normal'?'var(--medium)':'var(--low)'};margin-bottom:16px;">${u.dataAccess}</div>
+    <div class="drawer-section-title">Behavior Timeline (Last 7 days)</div>
+    <div>${generateTimeline(u)}</div>
+    ${u.risk>40?`<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-danger" onclick="showToast('Alert Created','High-risk user alert created for ${u.name}','critical',6000)" style="font-size:11px;" data-require-perm="investigate">Create Alert</button>
+      <button class="btn btn-ghost" onclick="showToast('Case Opened','Investigation case opened for ${u.name}','info',4000)" style="font-size:11px;" data-require-perm="investigate">Open Case</button>
+      <button class="btn btn-ghost" onclick="showToast('Notified','Manager notified about anomalous activity for ${u.name}','success',4000)" style="font-size:11px;">Notify Manager</button>
+    </div>`:''}`;
+  applyRoleUI();
+}
+
+function generateTimeline(u){
+  const events=[];
+  const now=Date.now();
+  if(u.risk>60){
+    events.push({ts:now-3600000,type:'anomaly',msg:`Accessed ${Math.floor(Math.random()*200)+50} restricted files outside business hours`});
+    events.push({ts:now-86400000,type:'anomaly',msg:`Login from unusual location: ${u.location}`});
+  }
+  events.push({ts:now-172800000,type:'login',msg:'Normal login from corporate network'});
+  events.push({ts:now-259200000,type:'login',msg:'Normal login — workstation authenticated'});
+  if(u.failedLogins>5) events.push({ts:now-345600000,type:'fail',msg:`${u.failedLogins} failed authentication attempts in 10 minutes`});
+  events.push({ts:now-432000000,type:'login',msg:'Normal login — VPN access'});
+  return events.map(e=>`
+    <div class="ueba-timeline-item">
+      <div class="anomaly-dot" style="background:${e.type==='anomaly'?'var(--critical)':e.type==='fail'?'var(--medium)':'var(--low)'}"></div>
+      <div style="flex:1;">
+        <div style="font-size:11px;color:var(--text-2);">${e.msg}</div>
+        <div style="font-size:9px;color:var(--text-3);font-family:var(--font-mono);margin-top:2px;">${TW.formatTime(e.ts)}</div>
+      </div>
+      ${e.type==='anomaly'?'<span class="badge badge-high">ANOMALY</span>':''}
+    </div>`).join('');
+}
+
+/* ─── MALWARE ─── */
+const MALWARE_SIGS=[
+  {name:'LockBit 3.0',type:'Ransomware',family:'LockBit',hash:'3a4f8b2c1d...e9f0a1b2c3',severity:'critical',detected:'Today',desc:'Ransomware that encrypts files and demands Bitcoin payment. Uses RaaS model. Deletes shadow copies.',av:94},
+  {name:'Cobalt Strike Beacon',type:'RAT',family:'CobaltStrike',hash:'7f3e9a1b2c...d4e5f6a7b8',severity:'critical',detected:'Today',desc:'Commercial C2 framework widely abused by threat actors. Beacon communicates over HTTP/S/DNS with malleable C2 profiles.',av:87},
+  {name:'ShadowPad',type:'Backdoor',family:'APT41',hash:'2b4d6f8a0c...e2f4a6b8c0',severity:'high',detected:'Yesterday',desc:'Modular backdoor used by APT-41. Supports keylogging, screenshot capture, remote shell, and file exfiltration.',av:79},
+  {name:'Emotet',type:'Trojan',family:'Emotet',hash:'9c8b7a6f5e...d4c3b2a190',severity:'high',detected:'2 days ago',desc:'Modular trojan that downloads additional payloads. Spreads via malicious Office documents with macro code.',av:96},
+  {name:'WellMess',type:'Malware',family:'APT-29',hash:'1a3c5e7f9b...0d2f4a6c8e',severity:'high',detected:'3 days ago',desc:'Golang implant associated with APT-29. Used in attacks against COVID-19 vaccine research organizations.',av:81},
+  {name:'CharmPower',type:'Backdoor',family:'APT-35',hash:'5f7a9c1e3b...2d4f6a8c0e',severity:'medium',detected:'1 week ago',desc:'PowerShell backdoor used by Charming Kitten. Communicates with C2 via Google Drive API.',av:73},
+  {name:'AsyncRAT',type:'RAT',family:'AsyncRAT',hash:'8a0c2e4f6b...8a0c2e4f6b',severity:'medium',detected:'1 week ago',desc:'Open-source remote administration tool. Supports keylogging, screenshots, reverse proxy, and file management.',av:89},
+];
+function renderMalware(){
+  document.getElementById('malware-list').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px;">
+    ${MALWARE_SIGS.map(m=>`<div class="campaign-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--text-1);">${m.name}</div>
+        <div style="font-size:10px;color:var(--text-3);font-family:var(--font-mono);margin-top:2px;">Family: ${m.family} &middot; ${m.type} &middot; ${m.detected}</div></div>
+        <span class="badge badge-${m.severity}">${m.severity.toUpperCase()}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-2);line-height:1.6;margin-bottom:10px;">${m.desc}</div>
+      <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-xs);padding:7px 10px;font-family:var(--font-mono);font-size:10px;color:var(--text-3);margin-bottom:10px;word-break:break-all;">SHA256: ${m.hash}…</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:10px;color:var(--text-3);">AV Coverage:</div>
+        <div class="confidence-bar" style="width:80px;"><div class="confidence-fill" style="width:${m.av}%;background:${m.av>85?'var(--low)':'var(--medium)'};"></div></div>
+        <span style="font-family:var(--font-mono);font-size:10px;color:${m.av>85?'var(--low)':'var(--medium)'};">${m.av}%</span>
+        <button class="btn btn-ghost" onclick="showToast('Blocked','Signature added to blocklist','success',3000)" style="margin-left:auto;font-size:10px;padding:3px 8px;" data-require-perm="respond">Block</button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+  applyRoleUI();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  // Run each init independently so one failure doesn't block the rest
+  [
+    ()=>{ populateUserCard(); },
+    ()=>{ initSidebar(); },
+    ()=>{ applyNotifButtonState(); },
+    ()=>{ try{applyRoleUI();}catch(e){} },
+    ()=>{ updateThreatLevel(TW.state.threatLevel); },
+    ()=>{ TW.startSimulation(); },
+    ()=>{ filterIOC(); },
+    ()=>{ renderCampaigns(); },
+    ()=>{ filterUEBA(); if(UEBA_USERS.length) openUEBAUser(UEBA_USERS[0].name); },
+    ()=>{ renderMalware(); },
+    ()=>{ TW.on('state:update',s=>{updateThreatLevel(s.threatLevel);updateNavBadge();}); },
+    ()=>{ TW.on('alert:new',a=>{updateNavBadge();}); },
+  ].forEach(fn=>{ try{fn();}catch(e){console.warn('[Intel init]',e.message);} });
+
+  // Guaranteed fallback render in case something blocked the first pass
+  setTimeout(()=>{
+    const tbody = document.getElementById('ioc-tbody');
+    const cnt   = document.getElementById('ioc-count');
+    if(tbody && (!tbody.innerHTML.trim() || (cnt && cnt.textContent==='Loading\u2026'))) {
+      try { filterIOC(); } catch(e){}
+    }
+    const clist = document.getElementById('campaigns-list');
+    if(clist && !clist.innerHTML.trim()) { try{renderCampaigns();}catch(e){} }
+  }, 250);
+
+  // New IOC every 15s
+  setInterval(()=>{
+    try {
+      const newIoc=genIOC(iocData.length+1);
+      iocData.unshift(newIoc);
+      if(iocData.length>100) iocData.pop();
+      const t=document.getElementById('tab-ioc');
+      if(t && t.classList.contains('active')) filterIOC();
+    } catch(e){}
+  },15000);
+});
+</script>
+<script src="js/gemini-chat.js"></script>
+<script src="js/command-palette.js"></script>
+</body>
+</html>
+

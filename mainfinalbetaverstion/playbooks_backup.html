@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch â€” Playbook Orchestration</title>
+<link rel="stylesheet" href="styles/base.css"/>
+<link rel="stylesheet" href="styles/dashboard.css"/>
+<script src="node_modules/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+body { overflow: hidden; }
+.playbook-container { display: flex; flex: 1; min-height: 0; background: #010409; }
+.pb-sidebar { width: 280px; background: var(--bg-1); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.pb-sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+.pb-sidebar-content { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 24px; }
+.pb-canvas-wrap { flex: 1; position: relative; }
+#pb-canvas { width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, #0d1117 0%, #010409 100%); }
+
+.pb-section-title { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.toolbox-item { background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 8px; }
+.toolbox-item:hover { border-color: var(--cyan); background: rgba(0,212,255,0.05); color: #fff; transform: translateX(2px); }
+.tb-icon { width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tb-icon svg { width: 14px; height: 14px; }
+
+/* Colors for toolbox */
+.trig-icon { background: rgba(234,179,8,0.15); color: #eab308; }
+.act-icon { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.cond-icon { background: rgba(168,85,247,0.15); color: #a855f7; }
+
+/* Overlay controls */
+.pb-controls { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10; }
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand" style="text-decoration: none; display: flex; align-items: center; gap: 12px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+      <div class="brand-text"><div class="brand-name">CybeWatch</div><div class="brand-version">ENTERPRISE v2.4 · Team Glanzee</div></div>
+    </a>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-item-text">Home</span></a>
+      <div class="nav-section-label">Operations</div>
+      <a class="nav-item" data-nav="dashboard" href="dashboard.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="nav-item-text">Dashboard</span>
+      </a>
+      <a class="nav-item" data-nav="topology" href="topology.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <span class="nav-item-text">Topology</span>
+      </a>
+      <a class="nav-item" data-nav="alerts" href="alerts.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="nav-item-text">Alerts</span><span class="nav-badge" id="alert-nav-badge" style="display:none"></span>
+      </a>
+      <a class="nav-item" data-nav="investigation" href="investigation.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="nav-item-text">Investigation</span>
+      </a>
+      <a class="nav-item active" data-nav="playbooks" href="playbooks.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="2" y1="12" x2="5" y2="12"/></svg>
+        <span class="nav-item-text">Playbooks</span>
+      </a>
+      <div class="nav-section-label">Intelligence</div>
+      <a class="nav-item" data-nav="intelligence" href="intelligence.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        <span class="nav-item-text">Threat Intel</span>
+      </a>
+      <a class="nav-item" data-nav="about" href="about.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="nav-item-text">About Team</span></a>
+      <div class="nav-section-label">System</div>
+      <a class="nav-item" data-nav="settings" href="settings.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span class="nav-item-text">Settings</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer"><div class="team-credit">CybeWatch by <span>Team Glanzee</span><br/>Abhinav R &amp; SF Melena</div>
+      <div class="user-card" onclick="if(window.toggleUserMenu) toggleUserMenu()">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info"><div class="user-name" id="user-display-name">Loadingâ€¦</div><div class="user-role" id="user-display-role">ROLE</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <button class="topbar-toggle" id="sidebar-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div style="font-size:16px;font-weight:700;color:var(--text-1);margin-left:8px;">Playbook Orchestrator</div>
+      <div class="topbar-spacer"></div>
+      <select class="input" style="width:200px;margin-right:16px;" id="pb-selector">
+        <option>Ransomware Containment</option>
+        <option>Phishing Response</option>
+        <option>New Playbook...</option>
+      </select>
+      <button class="btn btn-primary" style="padding:6px 16px;" onclick="showToast('Playbook Saved', 'Workflow committed to SIEM engine.', 'success')">Save Playbook</button>
+      <div class="topbar-actions" style="margin-left:8px;">
+        <div class="topbar-clock" id="topbar-clock">00:00:00</div>
+      </div>
+    </div>
+
+    <div class="playbook-container" id="tour-step-pb">
+      <div class="pb-sidebar">
+        <div class="pb-sidebar-header">
+          <div style="font-size:14px;font-weight:700;color:var(--text-1);margin-bottom:4px;">Node Toolbox</div>
+          <div style="font-size:11px;color:var(--text-3);">Click items to add them to the canvas</div>
+        </div>
+        <div class="pb-sidebar-content">
+          <div>
+            <div class="pb-section-title">Triggers</div>
+            <div class="toolbox-item" onclick="addNode('trigger', 'High Sev Alert')">
+              <div class="tb-icon trig-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>High Web Alert
+            </div>
+            <div class="toolbox-item" onclick="addNode('trigger', 'Malware Detected')">
+              <div class="tb-icon trig-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>Malware Detected
+            </div>
+          </div>
+          <div>
+            <div class="pb-section-title">Conditions</div>
+            <div class="toolbox-item" onclick="addNode('cond', 'IP Known Bad?')">
+              <div class="tb-icon cond-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>Check Threat Intel
+            </div>
+            <div class="toolbox-item" onclick="addNode('cond', 'Is Business Hours?')">
+              <div class="tb-icon cond-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>Check Time
+            </div>
+          </div>
+          <div>
+            <div class="pb-section-title">Actions</div>
+            <div class="toolbox-item" onclick="addNode('action', 'Block IP (Firewall)')">
+              <div class="tb-icon act-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>Block IP (Firewall)
+            </div>
+            <div class="toolbox-item" onclick="addNode('action', 'Isolate Host (EDR)')">
+              <div class="tb-icon act-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>Isolate Endpoints
+            </div>
+            <div class="toolbox-item" onclick="addNode('action', 'Send Slack Alert')">
+              <div class="tb-icon act-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>Notify SOC
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pb-canvas-wrap">
+        <div class="pb-controls">
+          <button class="btn btn-ghost" onclick="network.fit()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
+          <button class="btn btn-danger" onclick="if(confirm('Clear canvas?')) { nodes.clear(); edges.clear(); }">Clear</button>
+        </div>
+        <div id="pb-canvas"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script>
+if(!TW.requireAuth()) { location.href='login.html'; }
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Use initDashPage for consistent init (auth, sidebar, nav, simulation, user card)
+  if(window.initDashPage) {
+    initDashPage('playbooks');
+  } else {
+    populateUserCard();
+    initSidebar();
+    applyRoleUI();
+    TW.startSimulation();
+  }
+  
+  initPlaybookCanvas();
+});
+
+function toggleUserMenu(){
+  const m=document.getElementById('user-menu');
+  if(m){m.remove();return;}
+  const menu=document.createElement('div');
+  menu.id='user-menu';
+  menu.style.cssText='position:fixed;bottom:60px;left:10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);min-width:180px;z-index:200;box-shadow:var(--shadow);';
+  const sess=TW.getSession();
+  menu.innerHTML=`<div style="padding:10px 14px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:600;color:var(--text-1)">${sess?sess.name:''}</div><div style="font-size:10px;color:var(--text-3);font-family:var(--font-mono)">${sess?sess.role.toUpperCase():''}</div></div>
+    <div class="dropdown-item" onclick="if(window.logout) logout(); else { sessionStorage.removeItem('tw_session'); location.href='index.html'; }" style="font-size:12px;gap:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</div>`;
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',function rm(e){if(!menu.contains(e.target)){menu.remove();document.removeEventListener('click',rm);}}),100);
+}
+
+let nodes, edges, network;
+let nodeIdPrefix = 10;
+
+function initPlaybookCanvas() {
+  nodes = new vis.DataSet([
+    { id: 1, label: "Trigger: Malware Detection", group: "trigger", x: -150, y: -200 },
+    { id: 2, label: "Condition: Known Bad Hash?", group: "cond", x: 0, y: -100 },
+    { id: 3, label: "Action: Auto Isolate Host", group: "action", x: -150, y: 50 },
+    { id: 4, label: "Action: Run Deep Scan", group: "action", x: -150, y: 150 },
+    { id: 5, label: "Action: Ticket SOC L2", group: "action", x: 150, y: 50 }
+  ]);
+  
+  edges = new vis.DataSet([
+    { from: 1, to: 2 },
+    { from: 2, to: 3, label: "Yes" },
+    { from: 3, to: 4 },
+    { from: 2, to: 5, label: "No" }
+  ]);
+  
+  const container = document.getElementById('pb-canvas');
+  const data = { nodes, edges };
+  const options = {
+    nodes: {
+      shape: 'box',
+      font: { color: '#ffffff', face: 'Inter', size: 14 },
+      borderWidth: 2,
+      shadow: { enabled: true, color: 'rgba(0,0,0,0.5)', size: 10 },
+      widthConstraint: { minimum: 150 },
+      margin: { top: 10, bottom: 10, left: 14, right: 14 }
+    },
+    edges: {
+      width: 2, color: { color: '#30363d', highlight: '#0ea5e9' },
+      smooth: { type: 'cubicBezier', roundness: 0.4 },
+      arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+      font: { color: '#8b949e', size: 12, align: 'horizontal' }
+    },
+    groups: {
+      trigger: { color: { background: 'rgba(234,179,8,0.1)', border: '#eab308', highlight: { background: 'rgba(234,179,8,0.2)', border: '#eab308' } } },
+      cond:    { color: { background: 'rgba(168,85,247,0.1)', border: '#a855f7', highlight: { background: 'rgba(168,85,247,0.2)', border: '#a855f7' } } },
+      action:  { color: { background: 'rgba(59,130,246,0.1)',  border: '#3b82f6', highlight: { background: 'rgba(59,130,246,0.2)',  border: '#3b82f6' } } }
+    },
+    layout: {
+      hierarchical: { enabled: false }
+    },
+    physics: false,
+    interaction: { dragNodes: true, hover: true, tooltipDelay: 200 },
+    manipulation: {
+      enabled: true,
+      initiallyActive: true,
+      addNode: false,
+      addEdge: true,
+      editEdge: false,
+      deleteNode: true,
+      deleteEdge: true
+    }
+  };
+  
+  network = new vis.Network(container, data, options);
+}
+
+window.addNode = function(group, label) {
+  const id = nodeIdPrefix++;
+  let fullLabel = "";
+  if (group === 'trigger') fullLabel = `Trigger: ${label}`;
+  else if (group === 'cond') fullLabel = `Cond: ${label}`;
+  else fullLabel = `Action: ${label}`;
+  
+  // Calculate center of view to place new node
+  const viewPos = network.getViewPosition();
+  // Add a slight random offset so multiple additions don't completely overlap
+  const offsetX = (Math.random() - 0.5) * 40;
+  const offsetY = (Math.random() - 0.5) * 40;
+  
+  nodes.add({
+    id: id,
+    label: fullLabel,
+    group: group,
+    x: viewPos.x + offsetX,
+    y: viewPos.y + offsetY
+  });
+};
+</script>
+<style>
+/* Vis JS overrides for manipulation UI */
+.vis-manipulation { background: rgba(2, 4, 8, 0.9) !important; border-bottom: 1px solid var(--border) !important; color: var(--text-2) !important; font-family: var(--font-sans) !important; font-size: 11px !important; }
+.vis-button, .vis-button:hover { margin: 0 4px !important; box-shadow: none !important; border: 1px solid var(--border-2) !important; border-radius: 4px !important; background: var(--bg-2) !important; color: var(--text-1) !important; padding: 4px 8px !important; cursor: pointer !important; }
+.vis-button:hover { border-color: var(--cyan) !important; color: var(--cyan) !important; }
+.vis-button .vis-label { color: inherit !important; font-family: inherit !important; }
+</style>
+<script src="js/gemini-chat.js"></script>
+</body>
+</html>
+

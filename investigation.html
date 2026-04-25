@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+<script>
+window.addEventListener('error', function(e) {
+  const err = document.createElement('div');
+  err.style = 'position:fixed;top:0;left:0;z-index:99999;background:red;color:white;padding:20px;font-family:monospace;pointer-events:none;';
+  err.innerText = 'JS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+  document.body.appendChild(err);
+});
+</script>
+<script>
+window.addEventListener('error', function(e) {
+  fetch('http://localhost:9999/log?msg=' + encodeURIComponent(e.message + ' at ' + e.filename + ':' + e.lineno));
+});
+window.addEventListener('unhandledrejection', function(e) {
+  fetch('http://localhost:9999/log?msg=' + encodeURIComponent(e.reason));
+});
+</script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch — Investigation</title>
+<link rel="stylesheet" href="styles/base.css"/>
+<link rel="stylesheet" href="styles/dashboard.css"/>
+<style>
+body{overflow:hidden;}
+.inv-layout{display:grid;grid-template-columns:320px 1fr;flex:1;overflow:hidden;min-height:0;}
+.inv-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.inv-sidebar-top{padding:12px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.case-list-wrap{flex:1;overflow-y:auto;padding:10px;}
+.inv-main{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.case-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:var(--bg-1);}
+.timeline-item{display:flex;gap:10px;padding:6px 0;position:relative;}
+.timeline-line{position:absolute;left:11px;top:30px;bottom:-6px;width:1px;background:var(--border);}
+.timeline-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;}
+.activity-sections{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px;}
+.response-log-mini{background:var(--bg-0);border:1px solid var(--border);border-radius:var(--radius-xs);padding:10px;font-family:var(--font-mono);font-size:10px;overflow-y:auto;max-height:140px;}
+.log-line{padding:2px 0;border-bottom:1px solid var(--border-2);}
+.log-line.success{color:var(--low);}
+.log-line.warn{color:var(--medium);}
+.log-line.danger{color:var(--critical);}
+.log-line.info{color:var(--cyan);}
+
+/* Kill Chain */
+.kill-chain { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: var(--bg-2); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); overflow-x: auto; }
+.kc-stage { flex: 1; text-align: center; position: relative; font-size: 10px; font-weight: 600; color: var(--text-3); display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 2; }
+.kc-stage:not(:last-child)::after { content: ''; position: absolute; right: -50%; top: 12px; width: 100%; height: 2px; background: var(--border-2); z-index: -1; }
+.kc-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--bg-3); border: 2px solid var(--border); z-index: 2; position: relative; display: flex; align-items: center; justify-content: center; }
+.kc-stage.active { color: var(--cyan); }
+.kc-stage.active .kc-dot { background: rgba(0, 212, 255, 0.1); border-color: var(--cyan); box-shadow: 0 0 12px rgba(0, 212, 255, 0.5); }
+.kc-stage.active:not(:last-child)::after { background: var(--cyan); }
+
+/* Hunt Tabs */
+.inv-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg-1); flex-shrink: 0; }
+.inv-tab { padding: 12px 20px; font-size: 12px; font-weight: 500; color: var(--text-3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.inv-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.inv-tab:hover { color: var(--text-2); background: var(--bg-2); }
+
+/* Layout panels */
+.inv-layout { display: grid; grid-template-columns: 320px 1fr; flex: 1; overflow: hidden; min-height: 0; }
+#lay-cases  { display: grid; }
+#lay-hunt   { display: none; }
+
+/* Splunk-style Query Explorer */
+.hunt-layout { flex-direction: column; flex: 1; overflow: hidden; background: #040810; }
+.hunt-search-bar { background: #020408; border-bottom: 1px solid rgba(0,212,255,0.2); padding: 12px 20px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+.hunt-input-wrap { display: flex; gap: 10px; align-items: flex-start; }
+.hunt-input { flex: 1; background: transparent; border: 1px solid var(--border-2); border-radius: 4px; padding: 12px; color: #a5d6ff; font-family: var(--font-mono); font-size: 13px; outline: none; resize: none; min-height: 48px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }
+.hunt-input:focus { border-color: var(--cyan); }
+.hunt-input::placeholder { color: #30363d; }
+.hunt-table-wrap { flex: 1; overflow: auto; padding: 16px 20px; }
+.hunt-res-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; }
+.hunt-res-table th { text-align: left; padding: 8px; color: var(--text-3); border-bottom: 1px solid var(--border-2); }
+.hunt-res-table td { padding: 8px; border-bottom: 1px solid var(--border-2); color: #c9d1d9; }
+.hunt-res-table tr:hover td { background: rgba(255,255,255,0.03); }
+.highlighted { background: rgba(0,212,255,0.2); color: #fff; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand" style="text-decoration: none; display: flex; align-items: center; gap: 12px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+      <div class="brand-text"><div class="brand-name">CybeWatch</div><div class="brand-version">ENTERPRISE v2.4 � Team Glanzee</div></div>
+    </a>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-item-text">Home</span></a>
+      <div class="nav-section-label">Operations</div>
+      <a class="nav-item" data-nav="dashboard"     href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span class="nav-item-text">Dashboard</span></a>
+      <a class="nav-item" data-nav="topology" href="topology.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="nav-item-text">Topology</span></a>
+      <a class="nav-item" data-nav="alerts"        href="alerts.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="nav-item-text">Alerts</span><span class="nav-badge" id="alert-nav-badge" style="display:none"></span></a>
+      <a class="nav-item active" data-nav="investigation" href="investigation.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="nav-item-text">Investigation</span></a>
+      <a class="nav-item" data-nav="playbooks" href="playbooks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="2" y1="12" x2="5" y2="12"/></svg><span class="nav-item-text">Playbooks</span></a>
+      <div class="nav-section-label">Intelligence</div>
+      <a class="nav-item" data-nav="intelligence"  href="intelligence.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg><span class="nav-item-text">Threat Intel</span></a>
+      <div class="nav-section-label">Configuration</div>
+      <a class="nav-item" data-nav="settings" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span class="nav-item-text">Settings</span></a>
+      <a class="nav-item" data-nav="reports" href="reports.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="nav-item-text">Reports</span>
+      </a>      <a class="nav-item" data-nav="about" href="about.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="nav-item-text">About Team</span></a>
+    </nav>
+    <div class="sidebar-footer"><div class="team-credit">CybeWatch by <span>Team Glanzee</span><br/>Abhinav R &amp; SF Melena</div>
+      <div class="user-card"><div class="avatar" id="user-avatar">A</div><div class="user-info"><div class="user-name" id="user-display-name">…</div><div class="user-role" id="user-display-role">ROLE</div></div></div>
+    </div>
+  </aside>
+  <div class="main-content">
+    <div class="topbar">
+      <button class="topbar-toggle" id="sidebar-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="threat-level-indicator">
+        <span class="tl-label">THREAT</span>
+        <div class="tl-bars"><div class="tl-bar" id="tl-bar-1"></div><div class="tl-bar" id="tl-bar-2"></div><div class="tl-bar" id="tl-bar-3"></div><div class="tl-bar" id="tl-bar-4"></div><div class="tl-bar" id="tl-bar-5"></div></div>
+        <span class="tl-text" id="tl-text">—</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-actions">
+        <button class="notif-btn" id="notif-toggle-btn" onclick="toggleNotifications()" title="Notifications ON — click to mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><div class="notif-dot"></div></button>
+        <button class="notif-btn" id="theme-toggle-btn" title="Toggle Theme" onclick="TW.toggleTheme()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg></button>
+        <div class="topbar-clock" id="topbar-clock">00:00:00</div>
+        <button class="btn btn-ghost" onclick="location.href='dashboard.html'" style="padding:5px 10px;font-size:11px;">← Dashboard</button>
+      </div>
+    </div>
+    <div class="inv-tabs">
+      <div class="inv-tab active" onclick="switchInvTab('cases')">Case Management</div>
+      <div class="inv-tab" onclick="switchInvTab('hunt')">Threat Hunting Explorer</div>
+    </div>
+    <div class="inv-layout" id="lay-cases">
+      <!-- Case List Sidebar -->
+      <div class="inv-sidebar">
+        <div class="inv-sidebar-top">
+          <input class="input" id="case-search" placeholder="Search cases…" oninput="renderCaseList()" style="flex:1;"/>
+          <button class="btn btn-ghost" onclick="openIngestor()" style="padding:7px 12px;flex-shrink:0;">📥 Ingest Logs</button>
+          <button class="btn btn-primary" onclick="createCase()" style="padding:7px 12px;flex-shrink:0;" data-require-perm="investigate">+ New</button>
+        </div>
+        <div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;gap:4px;flex-shrink:0;">
+          <button class="sev-filter active" data-status="all"         onclick="setCaseFilter('all')"         style="font-size:9px;padding:3px 8px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border);color:var(--text-3);cursor:pointer;">All</button>
+          <button class="sev-filter" data-status="open"               onclick="setCaseFilter('open')"         style="font-size:9px;padding:3px 8px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border);color:var(--medium);cursor:pointer;">Open</button>
+          <button class="sev-filter" data-status="in-progress"        onclick="setCaseFilter('in-progress')"  style="font-size:9px;padding:3px 8px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border);color:var(--blue);cursor:pointer;">Active</button>
+          <button class="sev-filter" data-status="closed"             onclick="setCaseFilter('closed')"       style="font-size:9px;padding:3px 8px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border);color:var(--low);cursor:pointer;">Closed</button>
+        </div>
+        <div class="case-list-wrap" id="case-list"></div>
+      </div>
+
+      <!-- Case Detail -->
+      <div class="inv-main">
+        <div class="case-header" id="case-header">
+          <div>
+            <div style="font-size:16px;font-weight:700;color:var(--text-1)" id="case-title-header">Select a case to view details</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:3px" id="case-meta-header"></div>
+          </div>
+          <div style="display:flex;gap:8px;" id="case-actions" class="hidden"></div>
+        </div>
+        <div class="activity-sections" id="case-detail-body">
+          <div class="empty-state" style="margin:auto;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <p>Select a case from the list or create a new investigation</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Splunk Style Hunt Layout -->
+    <div class="hunt-layout" id="lay-hunt">
+      <div class="hunt-search-bar">
+        <div style="color:#8b949e;font-size:11px;">Enter search query. Example: <code>source.ip="10.*" AND status="failed"</code></div>
+        <div class="hunt-input-wrap">
+          <svg style="color:#0ea5e9;margin-top:14px;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <textarea id="hunt-input" class="hunt-input" placeholder='source.ip="*" | stats count by event.type...' oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';" onkeydown="if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();runHuntQuery();}"></textarea>
+          <button class="btn btn-primary" style="height:48px;padding:0 24px;" onclick="runHuntQuery()">Search</button>
+        </div>
+        <div id="hunt-stats" style="color:#0ea5e9;font-size:11px;font-family:var(--font-mono); display:none;">Matched 0 logs in 0ms</div>
+      </div>
+      <div class="hunt-table-wrap">
+        <table class="hunt-res-table" id="hunt-res-table">
+          <thead><tr><th>Timestamp</th><th>Host</th><th>Source IP</th><th>Event / Log Message</th></tr></thead>
+          <tbody id="hunt-res-body">
+            <tr><td colspan="4" style="text-align:center;padding:40px;color:#8b949e;">Execute a query to retrieve logs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Ingestor Modal ── -->
+<div id="ingest-modal" style="display:none;position:fixed;inset:0;z-index:9999;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);" onclick="closeIngestor()"></div>
+  <div style="position:relative;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;background:var(--bg-1);border:1px solid var(--border-2);border-radius:16px;box-shadow:0 32px 128px rgba(0,0,0,0.6);padding:32px;display:flex;flex-direction:column;gap:20px;">
+    <div>
+      <h3 style="font-size:20px;font-weight:700;color:var(--text-1);margin-bottom:6px;">SIEM Log Ingestion</h3>
+      <p style="font-size:12px;color:var(--text-3);">Paste raw JSON security logs below to ingest them into the CybeWatch engine.</p>
+    </div>
+    <textarea id="ingest-input" style="flex:1;height:240px;background:var(--bg-0);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--cyan);font-family:var(--font-mono);font-size:11px;padding:12px;resize:none;" placeholder='[{"src_ip": "192.168.1.50", "message": "DDoS flood detected", "host": "srv-web-01"}]'></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:12px;">
+      <button class="btn btn-ghost" onclick="closeIngestor()">Cancel</button>
+      <button class="btn btn-primary" onclick="processIngestion()">Start Ingestion</button>
+    </div>
+  </div>
+</div>
+<!-- Create Case Modal -->
+<div id="create-case-modal" style="display:none;position:fixed;inset:0;z-index:9999;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);" onclick="closeCaseModal()"></div>
+  <div style="position:relative;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;background:var(--bg-1);border:1px solid var(--border-2);border-radius:12px;padding:24px;box-shadow:var(--shadow-lg);">
+    <h3 style="margin-bottom:16px;color:var(--text-1);">Create New Investigation</h3>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;color:var(--text-3);margin-bottom:6px;">Case Title / Summary</label>
+      <input type="text" id="new-case-title" placeholder="e.g. Unusual lateral movement from DB-01" style="width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:4px;padding:8px 12px;color:var(--text-1);outline:none;">
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:12px;">
+      <button class="btn btn-ghost" onclick="closeCaseModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitCase()">Create Case</button>
+    </div>
+  </div>
+</div>
+<script src="js/supabase.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script>
+if(window.TW && !TW.requireAuth()) { location.href='index.html'; }
+const ANALYSTS=['S. Miller','A. Chen','R. Patel','K. Okonkwo','L. Santos','A. Mueller'];
+
+// Always seed fresh cases (avoids sessionStorage corruption across sessions)
+const _now = Date.now();
+let cases = [
+  {id:'INC-001',title:'APT-29 Lateral Movement Campaign',sev:'critical',status:'in-progress',assignee:'A. Chen',created:_now-7200000,updated:_now-1800000,tags:['APT','Lateral Movement','Credential Theft'],summary:'Russian APT-29 group detected performing lateral movement across 3 servers after initial phishing compromise of admin.chen account.',linked_alerts:[1,3,5],notes:[{author:'A. Chen',ts:_now-5400000,text:'Initial triage complete. Confirmed Cobalt Strike beacon from ws-corp-042. Isolating host now.'},{author:'S. Miller',ts:_now-3600000,text:'Forensic image captured. Found persistence via registry run key: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\SecurityUpdate.'}],response_log:['[09:22:14] Host ws-corp-042 isolated from network','[09:24:01] Malicious process tree terminated','[09:25:33] Firewall rules deployed - block 185.220.0.0/16','[09:30:12] Credentials reset for admin.chen','[09:35:44] Full EDR scan initiated on adjacent hosts'], aiInsight: 'Anomalous surge in encrypted traffic patterns detected between core database servers and an external Tor exit node. Heuristics identify the traffic as a Cobalt Strike beacon with a 60-second jittered heartbeat, strongly suggesting APT-29 staging for data exfiltration.'},
+  {id:'INC-002',title:'DDoS Attack \u2014 Production API Gateway',sev:'high',status:'open',assignee:'R. Patel',created:_now-3600000,updated:_now-900000,tags:['DDoS','Availability'],summary:'Volumetric UDP flood targeting api-gateway.corp.local on port 443. Peak traffic 2.4 Gbps. Partial service degradation.',linked_alerts:[2,7],notes:[{author:'R. Patel',ts:_now-2700000,text:'Confirmed DDoS attack from botnet. Contacted ISP to activate BGP blackhole. Scrubbing center traffic redirected.'}],response_log:['[10:15:30] Alert triggered - 2.4 Gbps traffic spike','[10:16:02] Scrubbing center activated','[10:17:45] BGP blackhole routing enabled'], aiInsight: 'Detection of a coordinated amplification attack utilizing misconfigured NTP servers globally. Incoming UDP packet rate peaked at 4.2M pps. AI patterns suggest a Mirai-variant botnet targeting the SSL termination layer.'},
+  {id:'INC-003',title:'SQL Injection \u2014 Public Web Application',sev:'high',status:'in-progress',assignee:'S. Miller',created:_now-86400000,updated:_now-43200000,tags:['Web App','SQLi','Data Breach'],summary:'Successful SQL injection attack on /api/orders endpoint. Attacker may have exfiltrated customer PII. GDPR notification may be required.',linked_alerts:[4],notes:[{author:'S. Miller',ts:_now-80000000,text:'Database audit logs confirm 3,847 records accessed. Customer emails and order history exposed. Legal team notified.'}],response_log:['[Yesterday 14:30] SQLi payload detected in WAF logs','[Yesterday 14:32] WAF rule created to block pattern','[Yesterday 15:00] DB audit initiated'], aiInsight: 'Web application logs reveal iterative probing of the `/api/orders` parameter. The successful payload utilized a double-encoding bypass technique to evade traditional WAF signatures, eventually executing a `UNION SELECT` to dump the `customer_pii` table.'},
+  {id:'INC-004',title:'Insider Threat \u2014 Unauthorized Data Access',sev:'medium',status:'open',assignee:'K. Okonkwo',created:_now-172800000,updated:_now-86400000,tags:['Insider Threat','UEBA','Data Access'],summary:'UEBA engine flagged m.okonkwo accessing 847 restricted files outside business hours over 3 consecutive nights.',linked_alerts:[],notes:[],response_log:[], aiInsight: 'User behavior baseline deviation detected. Historical access for this user is restricted to 08:00-18:00 on weekdays. Recent activity shows bulk file copies of confidential project folders to a local temporary directory at 02:30 AM via a VPN connection.'},
+  {id:'INC-005',title:'Phishing Campaign \u2014 Finance Department',sev:'medium',status:'closed',assignee:'L. Santos',created:_now-604800000,updated:_now-432000000,tags:['Phishing','Initial Access'],summary:'Targeted spear phishing campaign against 12 finance employees. 2 credential harvester clicks. Passwords reset.',linked_alerts:[],notes:[{author:'L. Santos',ts:_now-500000000,text:'Investigation closed. All affected accounts secured. Security awareness training scheduled for finance team.'}],response_log:['Phishing emails quarantined','Credential resets forced for 2 users','Domain blocked in proxy/DNS'], aiInsight: 'Natural Language Processing (NLP) of the email body identified social engineering tactics impersonating the CEO. The embedded URI pointed to a pixel-perfect clone of the Microsoft 365 login page hosted on a compromised legitimate WordPress site.'},
+];
+// Merge any user-added cases from this session
+try {
+  const saved = JSON.parse(sessionStorage.getItem('tw_cases_extra') || '[]');
+  if(Array.isArray(saved)) cases = cases.concat(saved);
+} catch(e){}
+
+function saveCases(){
+  // Only persist user-added cases (INC-006+)
+  const extra = cases.filter(c => parseInt(c.id.replace('INC-','')) > 5);
+  sessionStorage.setItem('tw_cases_extra', JSON.stringify(extra));
+}
+
+let caseFilter='all', currentCaseId=null;
+function setCaseFilter(f){
+  caseFilter=f;
+  document.querySelectorAll('[data-status]').forEach(b=>b.classList.toggle('active',b.dataset.status===f));
+  renderCaseList();
+}
+function _fmtTime(ts){
+  try{
+    const d=new Date(ts),now=new Date(),diff=Math.floor((now-d)/1000);
+    if(diff<60) return diff+'s ago';
+    if(diff<3600) return Math.floor(diff/60)+'m ago';
+    if(diff<86400) return Math.floor(diff/3600)+'h ago';
+    return d.toLocaleDateString();
+  }catch(e){return 'recently';}
+}
+function renderCaseList(){
+  const q=(document.getElementById('case-search')||{}).value||'';
+  const qL=q.toLowerCase();
+  let data=[...cases].filter(c=>c&&c.id);
+  if(caseFilter!=='all') data=data.filter(c=>c.status===caseFilter);
+  if(qL) data=data.filter(c=>((c.title||'')+(c.summary||'')+(c.tags||[]).join('')).toLowerCase().includes(qL));
+  const el=document.getElementById('case-list');
+  if(!el) return;
+  if(!data.length){ el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-4);font-size:12px;">No cases found</div>'; return; }
+  el.innerHTML=data.map(c=>`
+    <div class="case-item ${c.id===currentCaseId?'selected':''}" onclick="openCase('${c.id}')">
+      <div class="status-dot ${c.status||'open'}"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          <div class="case-id">${c.id}</div>
+          <span class="badge badge-${c.sev||'medium'}" style="font-size:8px;">${(c.sev||'medium').toUpperCase()}</span>
+        </div>
+        <div class="case-title" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.title||'Untitled'}</div>
+        <div class="case-meta">${c.assignee||'Unassigned'} &middot; ${_fmtTime(c.updated)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function openCase(id){
+  currentCaseId=id;
+  renderCaseList();
+  const c=cases.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('case-title-header').textContent=c.title;
+  document.getElementById('case-meta-header').textContent=`${c.id} · Assigned to ${c.assignee} · Updated ${TW.formatTime(c.updated)}`;
+  document.getElementById('case-actions').classList.remove('hidden');
+  document.getElementById('case-actions').innerHTML=`
+    <select id="case-status-sel" style="background:var(--bg-2);border:1px solid var(--border-2);color:var(--text-1);padding:6px 10px;border-radius:var(--radius-xs);font-size:11px;">
+      ${['open','in-progress','closed'].map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <select id="case-assign-sel" style="background:var(--bg-2);border:1px solid var(--border-2);color:var(--text-1);padding:6px 10px;border-radius:var(--radius-xs);font-size:11px;">
+      ${ANALYSTS.map(a=>`<option value="${a}" ${c.assignee===a?'selected':''}>${a}</option>`).join('')}
+    </select>
+    <button class="btn btn-primary" onclick="generateAIAnalysis('${id}')" style="padding:6px 12px;font-size:11px;background:var(--cyan);color:#050a14;box-shadow:0 0 10px rgba(0,212,255,0.3);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="margin-right:4px;vertical-align:-2px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Generate AI Analysis</button>
+    <button class="btn btn-primary" onclick="saveCase('${id}')" style="padding:6px 12px;font-size:11px;">Save</button>`;
+
+  const linked=TW.alerts.filter(a=>(c.linked_alerts||[]).includes(a.id));
+  
+  // Kill chain determination
+  const tgs = (c.tags||[]).join(' ').toLowerCase();
+  const stages = [
+    { n: 'Recon & Dev', active: true }, // Always assumed
+    { n: 'Initial Access', active: tgs.includes('phish') || tgs.includes('exploit') || tgs.includes('access') || tgs.includes('brute') || tgs.includes('ddos') },
+    { n: 'Execution', active: tgs.includes('exec') || tgs.includes('payload') || tgs.includes('malware') || tgs.includes('credential') || tgs.includes('sql') },
+    { n: 'Lateral Movement', active: tgs.includes('lateral') || tgs.includes('pivot') },
+    { n: 'Exfiltration / Impact', active: tgs.includes('exfil') || tgs.includes('leak') || tgs.includes('breach') || tgs.includes('ransom') }
+  ];
+  const killChainHTML = `<div class="kill-chain">
+    ${stages.map(s => `<div class="kc-stage ${s.active?'active':''}"><div class="kc-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg></div>${s.n}</div>`).join('')}
+  </div>`;
+
+  document.getElementById('case-detail-body').innerHTML=`
+    <div>
+      <div class="drawer-section-title">MITRE ATT&CK Kill-Chain</div>
+      ${killChainHTML}
+    </div>
+    <div>
+      <div class="drawer-section-title">Summary</div>
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);padding:12px;font-size:12px;color:var(--text-2);line-height:1.6;">${c.summary}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">${c.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+    ${linked.length?`<div>
+      <div class="drawer-section-title">Linked Alerts (${linked.length})</div>
+      ${linked.map(a=>`<div class="mini-alert ${a.sev}" onclick="window.open('alerts.html?id=${a.id}')" style="margin-bottom:4px;cursor:pointer;">
+        <div style="flex-shrink:0;width:6px;height:6px;border-radius:50%;background:${TW.sevColor(a.sev)};margin-top:4px;"></div>
+        <div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--text-1);">${a.label}</div>
+        <div style="font-size:9px;color:var(--text-3);font-family:var(--font-mono);">${a.srcIp} · ${TW.formatTime(a.ts)}</div></div>
+        <span class="badge badge-${a.sev}" style="font-size:8px;">${a.sev.toUpperCase()}</span></div>`).join('')}
+    </div>`:''}
+    ${c.response_log.length?`<div>
+      <div class="drawer-section-title">Response Log</div>
+      <div class="response-log-mini">${c.response_log.map(l=>`<div class="log-line ${l.includes('SUCCESS')||l.includes('isolated')||l.includes('reset')||l.includes('blocked')?'success':l.includes('initiated')||l.includes('ALERT')?'warn':''}">${l}</div>`).join('')}</div>
+    </div>`:''}
+    <div>
+      <div class="drawer-section-title">Investigation Notes (${c.notes.length})</div>
+      <div id="notes-list">${c.notes.map(n=>`<div class="note-item"><div class="note-meta">${n.author} · ${new Date(n.ts).toLocaleString()}</div><div class="note-text">${n.text}</div></div>`).join('')}</div>
+      <div style="margin-top:8px;" data-require-perm="investigate">
+        <textarea class="note-input" id="note-input" placeholder="Add investigation note… (Ctrl+Enter to submit)"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px;gap:8px;">
+          <button class="btn btn-primary" onclick="addNote('${id}')" style="font-size:11px;padding:7px 14px;">Add Note</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="drawer-section-title">Automated Response Playbook</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <button class="btn btn-ghost" onclick="runPlaybook('${id}','block')" style="font-size:11px;padding:6px 12px;" data-require-perm="respond">🛡 Block IPs</button>
+        <button class="btn btn-ghost" onclick="runPlaybook('${id}','isolate')" style="font-size:11px;padding:6px 12px;" data-require-perm="respond">🔒 Isolate Host</button>
+        <button class="btn btn-ghost" onclick="runPlaybook('${id}','scan')" style="font-size:11px;padding:6px 12px;" data-require-perm="respond">🔍 Full Scan</button>
+        <button class="btn btn-danger" onclick="runPlaybook('${id}','report')" style="font-size:11px;padding:6px 12px;" data-require-perm="investigate">📄 Gen Report</button>
+      </div>
+      <div id="playbook-log" class="response-log-mini" style="max-height:80px;"></div>
+    </div>`;
+
+  document.getElementById('note-input').addEventListener('keydown',function(e){
+    if(e.ctrlKey&&e.key==='Enter') addNote(id);
+  });
+  applyRoleUI();
+}
+
+function saveCase(id){
+  const c=cases.find(x=>x.id===id);
+  if(!c) return;
+  c.status=document.getElementById('case-status-sel').value;
+  c.assignee=document.getElementById('case-assign-sel').value;
+  c.updated=Date.now();
+  saveCases(); renderCaseList();
+  showToast('Case Updated',`${c.id} saved successfully`,'success');
+}
+
+function addNote(id){
+  const c=cases.find(x=>x.id===id); if(!c) return;
+  const inp=document.getElementById('note-input');
+  const text=inp.value.trim(); if(!text) return;
+  const sess=TW.getSession();
+  c.notes.push({author:sess?sess.name:'Analyst',ts:Date.now(),text});
+  c.updated=Date.now();
+  inp.value='';
+  saveCases();
+  const nl=document.getElementById('notes-list');
+  const noteEl=document.createElement('div');noteEl.className='note-item animate-fadeIn';
+  noteEl.innerHTML=`<div class="note-meta">${sess?sess.name:'Analyst'} · Just now</div><div class="note-text">${text}</div>`;
+  nl.appendChild(noteEl);
+  showToast('Note Added','Investigation note saved','success',3000);
+}
+
+function createCase(){
+  document.getElementById('create-case-modal').style.display='block';
+  document.getElementById('new-case-title').focus();
+}
+function closeCaseModal(){
+  document.getElementById('create-case-modal').style.display='none';
+  document.getElementById('new-case-title').value='';
+}
+function submitCase(){
+  const title=document.getElementById('new-case-title').value.trim();
+  if(!title){ closeCaseModal(); return; }
+  const sess=TW.getSession();
+  const newCase={id:`INC-${String(cases.length+1).padStart(3,'0')}`,title,sev:'medium',status:'open',assignee:sess?sess.name:'Analyst',created:Date.now(),updated:Date.now(),tags:['New'],summary:title,linked_alerts:[],notes:[],response_log:[]};
+  cases.unshift(newCase);
+  saveCases(); renderCaseList(); openCase(newCase.id);
+  closeCaseModal();
+  showToast('Case Created',`${newCase.id} created`,'success');
+}
+
+function runPlaybook(caseId,action){
+  if(action === 'report' && !TW.requirePro('Automated Incident Reporting')) return;
+  const c=cases.find(x=>x.id===caseId); if(!c) return;
+  const log=document.getElementById('playbook-log'); if(!log) return;
+  const msgs={
+    block:['[RUNNING] Querying threat intel for malicious IPs…','[ACTION] Blocking 14 IPs at firewall…','[SUCCESS] 14 IPs blocked. Rules deployed.'],
+    isolate:['[RUNNING] Identifying compromised hosts…','[ACTION] Isolating host from network segment…','[SUCCESS] Host isolated. VLAN reassigned.'],
+    scan:['[RUNNING] Initializing EDR scan engine…','[ACTION] Scanning 247 endpoints…','[SUCCESS] Scan complete. 2 threats quarantined.'],
+    report:['[RUNNING] Collecting evidence artifacts…','[ACTION] Compiling PDF incident report…','[SUCCESS] Report generated: '+caseId+'-IR-'+Date.now().toString(36).toUpperCase()+'.pdf'],
+  };
+  const steps=msgs[action]||[];
+  steps.forEach((msg,i)=>{
+    setTimeout(()=>{
+      const line=document.createElement('div');
+      line.className='log-line '+(msg.includes('SUCCESS')?'success':msg.includes('ACTION')?'warn':'info');
+      line.textContent=msg;
+      log.appendChild(line);
+      log.scrollTop=log.scrollHeight;
+      if(i===steps.length-1){c.response_log.push(msg);saveCases();}
+    },i*1000);
+  });
+}
+
+/* ── Ingestor Logic ── */
+function openIngestor(){ document.getElementById('ingest-modal').style.display='block'; }
+function closeIngestor(){ document.getElementById('ingest-modal').style.display='none'; }
+function processIngestion(){
+  const raw = document.getElementById('ingest-input').value.trim();
+  if(!raw) return;
+  const res = TW.ingestLogs(raw);
+  if(res.success){
+    showToast('Ingestion Successful', `Successfully processed ${res.count} log events. Check Alerts table.`, 'success');
+    closeIngestor();
+    document.getElementById('ingest-input').value = '';
+    updateNavBadge();
+  } else {
+    showToast('Ingestion Failed', `Error: ${res.error}`, 'critical');
+  }
+}
+
+function switchInvTab(tab) {
+  document.querySelectorAll('.inv-tab').forEach(e => e.classList.remove('active'));
+  document.querySelector(`.inv-tab[onclick="switchInvTab('${tab}')"]`).classList.add('active');
+  if (tab === 'cases') {
+    document.getElementById('lay-cases').style.display = 'grid';
+    document.getElementById('lay-hunt').style.display = 'none';
+  } else {
+    document.getElementById('lay-cases').style.display = 'none';
+    document.getElementById('lay-hunt').style.display = 'flex';
+    runHuntQuery();
+  }
+}
+
+function runHuntQuery() {
+  const q = (document.getElementById('hunt-input').value || '').toLowerCase();
+  const start = performance.now();
+  
+  // Basic Splunk-like logic
+  let filtered = TW.alerts.filter(a => {
+    let match = true;
+    if(q.includes('source.ip=')) {
+      const matchStr = q.split('source.ip=')[1].split(' ')[0].replace(/['"]/g,'');
+      if(matchStr !== '*' && !a.srcIp.toLowerCase().includes(matchStr.replace('*',''))) match = false;
+    }
+    if(q.includes('host=')) {
+      const matchStr = q.split('host=')[1].split(' ')[0].replace(/['"]/g,'');
+      if(matchStr !== '*' && !a.host.toLowerCase().includes(matchStr.replace('*',''))) match = false;
+    }
+    if(q.includes('status=')) {
+      const matchStr = q.split('status=')[1].split(' ')[0].replace(/['"]/g,'');
+      if(matchStr === 'fail' && !a.category.toLowerCase().includes('auth')) match = false;
+    }
+    if(q && !q.includes('=')) {
+      if(!a.msg.toLowerCase().includes(q) && !a.srcIp.includes(q)) match = false;
+    }
+    return match;
+  });
+
+  const dur = Math.round(performance.now() - start);
+  const stats = document.getElementById('hunt-stats');
+  stats.style.display = 'block';
+  stats.textContent = `Matched ${filtered.length} logs in ${dur}ms`;
+
+  const bdy = document.getElementById('hunt-res-body');
+  if(!filtered.length) {
+    bdy.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;color:#8b949e;">No logs match your search.</td></tr>`;
+  } else {
+    // Generate synthetic log lines from alert templates just to visualize Hunt view realistically
+    bdy.innerHTML = filtered.slice(0, 50).map(a => {
+      let rawMsg = a.msg;
+      if (q && !q.includes('=')) {
+        rawMsg = rawMsg.replace(new RegExp(q, 'gi'), m => `<span class="highlighted">${m}</span>`);
+      }
+      return `<tr>
+        <td>${new Date(a.ts).toISOString().replace('T',' ').substring(0,19)}</td>
+        <td>${a.host}</td>
+        <td>${a.srcIp}</td>
+        <td style="word-break:break-word;">${rawMsg}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ── Hackathon GenAI Simulation Feature ──
+window.generateAIAnalysis = function(id) {
+  let notesArea = document.getElementById('case-detail-body');
+  if(!notesArea) {
+    notesArea = document.querySelector('.case-detail-panel');
+  }
+  if(!notesArea) return;
+  
+  if(document.getElementById(`ai-box-${id}`)) {
+    showToast('AI Analysis', 'Analysis is already complete for this case.', 'info');
+    return;
+  }
+  
+  let aiBox = document.createElement('div');
+  aiBox.id = `ai-box-${id}`;
+  aiBox.style = "background:#050a14;border:1px solid var(--cyan);border-radius:var(--radius-sm);padding:20px;margin-bottom:20px;box-shadow:0 0 30px rgba(0,212,255,0.05);position:relative;overflow:hidden;";
+  
+  let scanner = document.createElement('div');
+  scanner.style = "position:absolute;top:0;left:0;right:0;height:2px;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:scanline 2s infinite linear;opacity:0.3;";
+  aiBox.appendChild(scanner);
+
+  aiBox.innerHTML += `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid rgba(0,212,255,0.2);padding-bottom:12px;">
+      <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,212,255,0.1);display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" width="14" height="14"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      <span style="font-weight:700;color:var(--text-1);font-size:13px;letter-spacing:1px;">ARIA SOC ASSISTANT</span>
+      <span style="font-size:9px;color:var(--cyan);font-family:var(--font-mono);margin-left:auto;border:1px solid var(--cyan);padding:4px 6px;border-radius:4px;background:rgba(0,212,255,0.05);">LLM: GEMINI 2.0 FLASH</span>
+    </div>
+    <div id="ai-typing-area-${id}" style="font-family:var(--font-mono);font-size:11px;color:var(--text-2);line-height:1.7;white-space:pre-wrap;"></div>
+  `;
+  
+  notesArea.prepend(aiBox);
+  showToast('ARIA Activated', 'Deep Learning analysis initiated via Gemini API.', 'info', 3000);
+
+  const insight = c ? c.aiInsight : 'General anomaly detected. Multiple high-entropy payloads observed across several ingress points.';
+  const textToType = `[SYSTEM] Integrating telemetry for Case #${id}...
+[MODEL] Parsing endpoint logs, isolating payload structures, mapping lateral movement heuristics...
+
+EXECUTIVE SUMMARY:
+${insight}
+
+RISK ASSESSMENT: ${c && c.sev === 'critical' ? 'CRITICAL' : 'HIGH'}. Indicator mapping suggests potential staging for wider compromise.
+
+REMEDIATION PLAYBOOK (SOAR):
+1. Issue containment order on the infected node layer via core switch ACL.
+2. Execute forced memory dump on the endpoint via EDR agent to extract C2 profiles.
+3. Automatically execute the following Python auto-quarantine payload via SOAR APIs:
+
+<div style="background:var(--bg-0);padding:12px;border:1px solid var(--border-2);border-radius:6px;margin:12px 0;color:#818cf8;">def execute_quarantine(case_id="${id}"):
+    print(f"[*] Neutralizing active threats associated with {case_id}...")
+    firewall_api.block_ingress(target_ip="10.0.3.11", port=443)
+    firewall_api.isolate_vlan(target_ip="10.0.3.11")
+    print("[+] Threat neutralized.")
+
+execute_quarantine()</div>
+Analysis completed in 1.2s. Human operator validation is requested before full SOAR execution.`;
+
+  let idx = 0;
+  let typingArea = document.getElementById(`ai-typing-area-${id}`);
+  let isHtml = false;
+  
+  function typeChar() {
+    if(idx < textToType.length) {
+      if(textToType.charAt(idx) === '<') isHtml = true;
+      
+      let chunk = textToType.charAt(idx);
+      idx++;
+      
+      if(isHtml) {
+        while(idx < textToType.length && textToType.charAt(idx-1) !== '>') {
+          chunk += textToType.charAt(idx);
+          idx++;
+        }
+        isHtml = false;
+        typingArea.innerHTML += chunk;
+      } else {
+        typingArea.innerHTML += chunk;
+      }
+      
+      let delay = Math.random() * 10 + 5;
+      if(chunk === '.' || chunk === '\n') delay += 100;
+      setTimeout(typeChar, delay);
+    }
+  }
+  setTimeout(typeChar, 400);
+};
+
+const style = document.createElement('style');
+style.textContent = "@keyframes scanline { 0% {top:0;} 100% {top:100%;} }";
+document.head.appendChild(style);
+
+document.addEventListener('DOMContentLoaded',()=>{
+  try {
+    populateUserCard(); initSidebar(); applyNotifButtonState(); applyRoleUI();
+    updateThreatLevel(TW.state.threatLevel);
+    TW.startSimulation();
+    renderCaseList();
+    if(cases.length) openCase(cases[0].id);
+    TW.on('alert:new',a=>{updateNavBadge();updateThreatLevel(TW.state.threatLevel);});
+    TW.on('state:update',s=>{updateThreatLevel(s.threatLevel);updateNavBadge();});
+  } catch(e) {
+    console.error('[Investigation] DOMContentLoaded error:', e);
+  }
+});
+</script>
+<script src="js/gemini-chat.js"></script>
+<script src="js/command-palette.js"></script>
+</body>
+</html>
+

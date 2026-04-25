@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch Enterprise — Next-Gen SOC Platform</title>
+<meta name="description" content="CybeWatch Enterprise: AI-powered threat detection, SOAR playbooks, and real-time SOC intelligence. Built by Team Glanzee."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020817;--bg2:#0a1628;--bg3:#0f1f3a;
+  --cyan:#00d4ff;--purple:#a855f7;--pink:#ec4899;--green:#10b981;
+  --text1:#f1f5f9;--text2:#94a3b8;--text3:#475569;
+  --border:rgba(255,255,255,0.06);--border2:rgba(0,212,255,0.15);
+  --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text1);overflow-x:hidden;line-height:1.6;}
+
+/* ── NAV ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;padding:0 40px;height:64px;background:rgba(2,8,23,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto;}
+.nav-brand-icon{width:34px;height:34px;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(168,85,247,0.15));border:1px solid rgba(0,212,255,0.25);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.nav-brand-icon svg{width:18px;height:18px;color:var(--cyan);}
+.nav-brand-name{font-size:16px;font-weight:800;color:var(--text1);letter-spacing:-0.5px;}
+.nav-brand-name span{color:var(--cyan);}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-link{color:var(--text2);text-decoration:none;font-size:13px;font-weight:500;padding:6px 14px;border-radius:6px;transition:all 0.2s;}
+.nav-link:hover{color:var(--text1);background:rgba(255,255,255,0.06);}
+.nav-cta{background:var(--cyan);color:#020817;font-weight:700;font-size:12px;padding:8px 20px;border-radius:8px;text-decoration:none;transition:all 0.2s;margin-left:10px;letter-spacing:0.3px;}
+.nav-cta:hover{background:#22e5ff;box-shadow:0 0 20px rgba(0,212,255,0.4);}
+.nav-team-pill{background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;color:var(--purple);letter-spacing:1px;text-transform:uppercase;font-family:var(--mono);}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:100px 40px 80px;position:relative;overflow:hidden;text-align:center;}
+.hero-bg{position:absolute;inset:0;pointer-events:none;}
+.hero-glow-1{position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(0,212,255,0.08) 0%,transparent 70%);pointer-events:none;}
+.hero-glow-2{position:absolute;top:30%;left:15%;width:400px;height:400px;background:radial-gradient(ellipse,rgba(168,85,247,0.06) 0%,transparent 70%);pointer-events:none;}
+.hero-glow-3{position:absolute;top:30%;right:10%;width:400px;height:400px;background:radial-gradient(ellipse,rgba(16,185,129,0.04) 0%,transparent 70%);pointer-events:none;}
+/* Animated grid lines */
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 0%,transparent 100%);}
+
+.hero-inner{position:relative;z-index:2;max-width:800px;margin:0 auto;}
+.hero-preheader{display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:20px;padding:6px 18px;margin-bottom:30px;font-size:11px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1.5px;font-family:var(--mono);}
+.hero-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse-dot 2s infinite;}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.5)}50%{box-shadow:0 0 0 8px rgba(0,212,255,0)}}
+.hero h1{font-size:clamp(42px,7vw,80px);font-weight:900;line-height:1.05;letter-spacing:-2.5px;margin-bottom:24px;color:var(--text1);}
+.hero h1 .gradient-text{background:linear-gradient(135deg,var(--cyan) 0%,var(--purple) 60%,var(--pink) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:17px;color:var(--text2);max-width:560px;margin:0 auto 40px;line-height:1.7;}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:64px;}
+.btn-glow{display:inline-flex;align-items:center;gap:8px;background:var(--cyan);color:#020817;font-weight:800;font-size:14px;padding:13px 28px;border-radius:10px;text-decoration:none;transition:all 0.3s;letter-spacing:0.3px;}
+.btn-glow:hover{background:#22e5ff;box-shadow:0 0 30px rgba(0,212,255,0.5),0 0 60px rgba(0,212,255,0.2);transform:translateY(-2px);}
+.btn-glow svg{transition:transform 0.2s;}
+.btn-glow:hover svg{transform:translateX(4px);}
+.btn-ghost-hero{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:var(--text1);font-weight:600;font-size:14px;padding:13px 28px;border-radius:10px;text-decoration:none;transition:all 0.3s;}
+.btn-ghost-hero:hover{border-color:rgba(0,212,255,0.35);background:rgba(0,212,255,0.06);transform:translateY(-2px);}
+
+/* Live stats bar */
+.hero-stats{display:flex;gap:0;border:1px solid var(--border2);border-radius:14px;overflow:hidden;background:rgba(10,22,40,0.8);backdrop-filter:blur(20px);max-width:560px;margin:0 auto;}
+.hero-stat{flex:1;padding:18px 20px;text-align:center;border-right:1px solid var(--border);}
+.hero-stat:last-child{border-right:none;}
+.hero-stat-num{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--text1);display:block;}
+.hero-stat-num.c{color:#ef4444;}
+.hero-stat-num.g{color:var(--green);}
+.hero-stat-num.b{color:var(--cyan);}
+.hero-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-top:3px;display:block;}
+
+/* ── FEATURES ── */
+.features{padding:90px 40px;max-width:1200px;margin:0 auto;}
+.section-head{text-align:center;margin-bottom:56px;}
+.section-kicker{display:inline-block;font-size:11px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:2px;font-family:var(--mono);background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.15);border-radius:20px;padding:4px 14px;margin-bottom:16px;}
+.section-head h2{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-1px;color:var(--text1);margin-bottom:14px;}
+.section-head p{font-size:15px;color:var(--text2);max-width:480px;margin:0 auto;}
+.bento{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:auto;gap:16px;}
+.bento-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);}
+.bento-card:hover{border-color:var(--border2);transform:translateY(-4px);box-shadow:0 20px 40px -12px rgba(0,0,0,0.4);}
+.bento-card.wide{grid-column:span 2;}
+.bento-card.tall{grid-row:span 2;}
+.bento-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,0.35),transparent);opacity:0;transition:opacity 0.3s;}
+.bento-card:hover::before{opacity:1;}
+.card-glow-dot{position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;opacity:0.4;pointer-events:none;}
+.bento-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;}
+.bento-icon svg{width:22px;height:22px;}
+.bento-icon.blue{background:rgba(37,99,235,0.15);color:#3b82f6;}
+.bento-icon.cyan{background:rgba(0,212,255,0.1);color:var(--cyan);}
+.bento-icon.purple{background:rgba(168,85,247,0.12);color:var(--purple);}
+.bento-icon.green{background:rgba(16,185,129,0.1);color:var(--green);}
+.bento-icon.red{background:rgba(239,68,68,0.1);color:#ef4444;}
+.bento-icon.orange{background:rgba(249,115,22,0.1);color:#f97316;}
+.bento-card h3{font-size:15px;font-weight:700;color:var(--text1);margin-bottom:8px;letter-spacing:-0.3px;}
+.bento-card p{font-size:12.5px;color:var(--text2);line-height:1.6;}
+.bento-tag{display:inline-block;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.15);color:var(--cyan);font-size:9px;font-weight:700;border-radius:4px;padding:2px 8px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;}
+.bento-tag.purple{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.2);color:var(--purple);}
+.bento-tag.green{background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.2);color:var(--green);}
+.bento-tag.orange{background:rgba(249,115,22,0.08);border-color:rgba(249,115,22,0.2);color:#f97316;}
+.feature-mini-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;}
+.fml-item{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text2);}
+.fml-item::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--cyan);flex-shrink:0;}
+
+/* ── TEAM ── */
+.team-section{padding:80px 40px 100px;max-width:1000px;margin:0 auto;}
+.team-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px;}
+.team-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:36px 30px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden;transition:all 0.4s cubic-bezier(0.16,1,0.3,1);}
+.team-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(0,212,255,0.04) 0%,transparent 60%);pointer-events:none;}
+.team-card.lead::after{background:radial-gradient(circle at 50% 0%,rgba(168,85,247,0.06) 0%,transparent 60%);}
+.team-card::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0.5;}
+.team-card.lead::before{background:linear-gradient(90deg,transparent,var(--purple),var(--cyan),var(--purple),transparent);}
+.team-card:hover{border-color:rgba(0,212,255,0.3);transform:translateY(-6px);box-shadow:0 24px 48px -12px rgba(0,212,255,0.12);}
+.team-card.lead:hover{border-color:rgba(168,85,247,0.3);box-shadow:0 24px 48px -12px rgba(168,85,247,0.12);}
+.team-photo-wrap{width:120px;height:120px;border-radius:50%;padding:3px;background:linear-gradient(135deg,var(--cyan),var(--purple));margin-bottom:20px;box-shadow:0 0 30px rgba(0,212,255,0.2);transition:transform 0.4s,box-shadow 0.4s;}
+.team-card:hover .team-photo-wrap{transform:scale(1.06) rotate(3deg);box-shadow:0 0 40px rgba(0,212,255,0.3);}
+.team-card.lead .team-photo-wrap{background:linear-gradient(135deg,var(--purple),var(--cyan),var(--pink));}
+.team-card.lead:hover .team-photo-wrap{box-shadow:0 0 40px rgba(168,85,247,0.35);}
+.team-photo{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid var(--bg2);}
+.team-avatar{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:900;border:3px solid var(--bg2);background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(0,212,255,0.1));}
+.team-founder-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);border-radius:20px;padding:3px 12px;font-size:9px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1.5px;font-family:var(--mono);margin-bottom:12px;}
+.team-founder-badge.co{background:rgba(0,212,255,0.08);border-color:rgba(0,212,255,0.2);color:var(--cyan);}
+.team-name{font-size:22px;font-weight:800;color:var(--text1);letter-spacing:-0.5px;margin-bottom:4px;}
+.team-role{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;display:flex;align-items:center;gap:6px;justify-content:center;}
+.team-role .role-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);}
+.team-skills{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:18px;}
+.skill-chip{background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.15);border-radius:20px;padding:4px 12px;font-size:10px;font-weight:600;color:var(--cyan);}
+.skill-chip.purple{background:rgba(168,85,247,0.07);border-color:rgba(168,85,247,0.18);color:var(--purple);}
+.skill-chip.green{background:rgba(16,185,129,0.07);border-color:rgba(16,185,129,0.18);color:var(--green);}
+.team-bio{font-size:12.5px;color:var(--text2);line-height:1.65;max-width:280px;margin-bottom:22px;}
+.team-social{display:flex;gap:10px;justify-content:center;}
+.soc-btn{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text3);text-decoration:none;transition:all 0.2s;}
+.soc-btn:hover{background:rgba(0,212,255,0.08);border-color:rgba(0,212,255,0.25);color:var(--cyan);}
+.soc-btn svg{width:16px;height:16px;}
+.team-glanzee-banner{text-align:center;margin-bottom:40px;}
+.tg-label{display:inline-flex;align-items:center;gap:10px;background:rgba(168,85,247,0.05);border:1px solid rgba(168,85,247,0.15);border-radius:20px;padding:8px 24px;font-size:12px;font-weight:700;color:var(--purple);font-family:var(--mono);text-transform:uppercase;letter-spacing:1.5px;}
+.tg-label svg{width:14px;height:14px;}
+.viber-strip{display:flex;align-items:center;gap:4px;background:linear-gradient(90deg,rgba(168,85,247,0.08),rgba(0,212,255,0.08));border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:6px 14px;font-size:10px;font-weight:700;color:var(--text2);font-family:var(--mono);margin-top:8px;justify-content:center;}
+.viber-strip span{color:var(--purple);}
+
+/* ── FOOTER ── */
+.footer{border-top:1px solid var(--border);padding:32px 40px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);}
+.footer-brand{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text2);}
+.footer-brand svg{width:16px;height:16px;color:var(--cyan);}
+.footer-copy{font-size:11px;color:var(--text3);}
+.footer-right{font-size:11px;color:var(--text3);font-family:var(--mono);}
+
+/* Scroll indicator */
+.scroll-indicator{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;animation:bounce 2s infinite;}
+.scroll-indicator svg{width:18px;height:18px;color:var(--text3);}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+
+/* Animations */
+@keyframes fade-up{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.anim-1{animation:fade-up 0.7s ease-out 0s both;}
+.anim-2{animation:fade-up 0.7s ease-out 0.1s both;}
+.anim-3{animation:fade-up 0.7s ease-out 0.2s both;}
+.anim-4{animation:fade-up 0.7s ease-out 0.3s both;}
+.anim-5{animation:fade-up 0.7s ease-out 0.4s both;}
+
+/* ── CAPABILITIES LIST ── */
+.caps-section{padding:80px 40px;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(2,1fr);gap:40px;}
+.cap-group h3{font-size:14px;color:var(--cyan);text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.cap-group h3::after{content:'';height:1px;flex:1;background:var(--border2);}
+.cap-list{display:grid;gap:12px;}
+.cap-item{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--text2);display:flex;align-items:center;gap:12px;transition:all 0.2s;}
+.cap-item:hover{background:rgba(255,255,255,0.05);border-color:rgba(0,212,255,0.2);transform:translateX(5px);}
+.cap-item svg{width:16px;height:16px;color:var(--cyan);}
+
+/* ── COMPANY & WORKING ── */
+.company-section{padding:100px 40px;background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);position:relative;overflow:hidden;}
+.company-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:64px;max-width:1200px;margin:0 auto;align-items:center;}
+.company-content h2{font-size:48px;font-weight:900;letter-spacing:-2px;margin-bottom:24px;line-height:1.1;}
+.company-content p{font-size:18px;color:var(--text2);margin-bottom:32px;max-width:600px;}
+.stats-mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+.stat-box{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:24px;transition:all 0.3s;}
+.stat-box:hover{border-color:var(--cyan);background:rgba(0,212,255,0.05);transform:translateY(-5px);}
+.stat-box-num{font-size:32px;font-weight:800;color:var(--cyan);display:block;margin-bottom:4px;}
+.stat-box-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:700;}
+
+.working-section{padding:100px 40px;max-width:1200px;margin:0 auto;}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:64px;position:relative;}
+.process-steps::before{content:'';position:absolute;top:40px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0.2;z-index:0;}
+.process-step{position:relative;z-index:1;text-align:center;}
+.step-num{width:80px;height:80px;background:var(--bg2);border:2px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:24px;font-weight:900;color:var(--cyan);transition:all 0.4s;box-shadow:0 0 20px rgba(0,0,0,0.3);}
+.process-step:hover .step-num{border-color:var(--cyan);box-shadow:0 0 30px rgba(0,212,255,0.3);transform:scale(1.1);}
+.process-step h3{font-size:16px;font-weight:800;margin-bottom:12px;color:var(--text1);}
+.process-step p{font-size:13px;color:var(--text2);line-height:1.6;}
+
+.infra-section{padding:100px 40px;background:rgba(0,0,0,0.2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.infra-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;max-width:1200px;margin:0 auto;}
+.infra-card{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:40px;text-align:center;transition:all 0.3s;}
+.infra-card:hover{border-color:var(--purple);transform:translateY(-8px);}
+.infra-icon{width:64px;height:64px;background:rgba(168,85,247,0.1);color:var(--purple);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;}
+.infra-icon svg{width:32px;height:32px;}
+.infra-card h3{font-size:20px;font-weight:800;margin-bottom:16px;}
+.infra-card p{font-size:14px;color:var(--text2);line-height:1.6;}
+.infra-list{margin-top:24px;text-align:left;display:flex;flex-direction:column;gap:10px;}
+.infra-item{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);}
+.infra-item svg{width:14px;height:14px;color:var(--green);}
+
+@media(max-width:968px){
+  .company-grid,.process-steps,.infra-grid,.caps-section{grid-template-columns:1fr;}
+  .process-steps::before{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="#" class="nav-brand">
+    <div class="nav-brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+    <div class="nav-brand-name">Cybe<span>Watch</span></div>
+  </a>
+  <div class="nav-links">
+    <div class="nav-team-pill">Team Glanzee</div>
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#working" class="nav-link">Working</a>
+    <a href="#company" class="nav-link">Company</a>
+    <a href="#team" class="nav-link">Team</a>
+    <a href="login.html" class="nav-cta">Launch Console</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-bg">
+    <div class="hero-grid"></div>
+    <div class="hero-glow-1"></div>
+    <div class="hero-glow-2"></div>
+    <div class="hero-glow-3"></div>
+  </div>
+
+  <div class="hero-inner">
+    <div class="hero-preheader anim-1">
+      <span class="hero-dot"></span>
+      Team Glanzee &mdash; Enterprise SOC Intelligence
+    </div>
+    <h1 class="anim-2">
+      Detect Every Threat.<br>
+      <span class="gradient-text">Zero Compromises.</span>
+    </h1>
+    <p class="hero-sub anim-3">
+      CybeWatch Enterprise unifies AI-powered threat detection, SOAR playbooks, and real-time
+      security intelligence into one seamless analyst console. Built by vibe coders, for the modern SOC.
+    </p>
+    <div class="hero-btns anim-4">
+      <a href="login.html" class="btn-glow">
+        Launch Console
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+      <a href="#features" class="btn-ghost-hero">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        Explore Features
+      </a>
+    </div>
+
+    <div class="hero-stats anim-5">
+      <div class="hero-stat">
+        <span class="hero-stat-num c" id="stat-crit">--</span>
+        <span class="hero-stat-label">Critical Alerts</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-num b" id="stat-events">--</span>
+        <span class="hero-stat-label">Events / Tick</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-num g" id="stat-blocked">--</span>
+        <span class="hero-stat-label">Threats Blocked</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-num g" id="stat-score">--</span>
+        <span class="hero-stat-label">Security Score</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+    Scroll
+  </div>
+</header>
+
+<!-- FEATURES -->
+<section id="features" class="features">
+  <div class="section-head">
+    <div class="section-kicker">Platform Capabilities</div>
+    <h2>Everything a Modern SOC Needs</h2>
+    <p>Modular security architecture engineered to detect, analyze, and eliminate threats at machine speed.</p>
+  </div>
+
+  <div class="bento">
+    <!-- Real-Time Monitoring (wide) -->
+    <div class="bento-card wide">
+      <div class="card-glow-dot" style="background:radial-gradient(circle,rgba(0,212,255,0.25),transparent);"></div>
+      <div class="bento-tag">Live</div>
+      <div class="bento-icon cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <h3>Real-Time Threat Monitoring</h3>
+      <p>Autonomous neural sensor fabric monitors network traffic continuously, detecting advanced persistent threats before they escalate across your subnet. Zero-latency anomaly detection powered by ML correlation engines.</p>
+      <div class="feature-mini-list">
+        <div class="fml-item">Live geo-attack visualization on world map</div>
+        <div class="fml-item">MITRE ATT&CK kill-chain tracking per incident</div>
+        <div class="fml-item">Configurable severity thresholds with auto-escalation</div>
+      </div>
+    </div>
+
+    <!-- SOAR -->
+    <div class="bento-card">
+      <div class="card-glow-dot" style="background:radial-gradient(circle,rgba(168,85,247,0.2),transparent);"></div>
+      <div class="bento-tag purple">SOAR</div>
+      <div class="bento-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="12" x2="22" y2="12"/></svg></div>
+      <h3>SOAR Playbook Orchestration</h3>
+      <p>Drag-and-drop canvas to build automated response workflows. Connect Triggers, Conditions, and Actions with live simulation mode.</p>
+    </div>
+
+    <!-- Threat Intel -->
+    <div class="bento-card">
+      <div class="card-glow-dot" style="background:radial-gradient(circle,rgba(16,185,129,0.2),transparent);right:-20px;"></div>
+      <div class="bento-tag green">Intel</div>
+      <div class="bento-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+      <h3>Live Global Threat Intel</h3>
+      <p>Real-time CISA advisory feeds, APT actor profiles, IOC matching, and UEBA peer-risk behavior analytics.</p>
+    </div>
+
+    <!-- Investigation -->
+    <div class="bento-card">
+      <div class="card-glow-dot" style="background:radial-gradient(circle,rgba(59,130,246,0.18),transparent);"></div>
+      <div class="bento-tag">Forensics</div>
+      <div class="bento-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <h3>Splunk-Style Threat Hunting</h3>
+      <p>Query raw logs with a dark-mode search terminal. Filter by IP, user, host, or custom field expressions in real-time.</p>
+    </div>
+
+    <!-- Reports -->
+    <div class="bento-card">
+      <div class="card-glow-dot" style="background:radial-gradient(circle,rgba(249,115,22,0.15),transparent);"></div>
+      <div class="bento-tag orange">Reports</div>
+      <div class="bento-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <h3>Executive PDF Reports</h3>
+      <p>Auto-generate compliance reports (SOC 2, ISO 27001, NIST) and analyst briefs with one click &mdash; download as professional branded PDFs.</p>
+    </div>
+
+    <!-- Topology (wide) -->
+    <div class="bento-card wide">
+      <div class="card-glow-dot" style="background:radial-gradient(circle,rgba(239,68,68,0.12),transparent);"></div>
+      <div class="bento-tag" style="background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.2);color:#ef4444;">Network</div>
+      <div class="bento-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+      <h3>Interactive Network Topology Map</h3>
+      <p>Physics-based D3 force-directed network graph. Drag nodes, simulate lateral movement attacks, and visualize your entire infrastructure exposure in real time.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- CORE CAPABILITIES -->
+<section class="caps-section">
+  <div class="cap-group">
+    <h3>Advanced Detection</h3>
+    <div class="cap-list">
+      <div class="cap-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Behavioral Heuristics Engine</div>
+      <div class="cap-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Zero-Day Anomaly Detection</div>
+      <div class="cap-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Multi-Vector Correlation</div>
+      <div class="cap-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Encrypted Traffic Analysis</div>
+    </div>
+  </div>
+  <div class="cap-group">
+    <h3>Automated Response</h3>
+    <div class="cap-list">
+      <div class="cap-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> One-Click Host Quarantine</div>
+      <div class="cap-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Adaptive Firewall Orchestration</div>
+      <div class="cap-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Process Termination Hooks</div>
+      <div class="cap-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Automated Sandbox Detonation</div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKING SECTION -->
+<section id="working" class="working-section">
+  <div class="section-head">
+    <div class="section-kicker">The Methodology</div>
+    <h2>How CybeWatch Operates</h2>
+    <p>A multi-layered defense-in-depth strategy that moves at the speed of light.</p>
+  </div>
+  
+  <div class="process-steps">
+    <div class="process-step">
+      <div class="step-num">01</div>
+      <h3>Ingest</h3>
+      <p>Continuous ingestion of raw telemetry from distributed network sensors and host agents across the globe.</p>
+    </div>
+    <div class="process-step">
+      <div class="step-num">02</div>
+      <h3>Analyze</h3>
+      <p>AI correlation engines process events using LLM-backed behavioral analysis to detect stealthy APT patterns.</p>
+    </div>
+    <div class="process-step">
+      <div class="step-num">03</div>
+      <h3>Visualize</h3>
+      <p>Real-time updates to the 3D Global Attack Globe and Network Topology for instant situational awareness.</p>
+    </div>
+    <div class="process-step">
+      <div class="step-num">04</div>
+      <h3>Neutralize</h3>
+      <p>Automated SOAR playbooks trigger isolation protocols to neutralize threats before lateral movement occurs.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COMPANY SECTION -->
+<section id="company" class="company-section">
+  <div class="company-grid">
+    <div class="company-content">
+      <div class="section-kicker">Our Story</div>
+      <h2>Enterprise Intelligence, <span class="gradient-text">Vibe Powered.</span></h2>
+      <p>Founded by Team Glanzee, CybeWatch Enterprise was born from a simple observation: modern security tools are too complex, too slow, and lack the creative edge needed to fight modern threats. We built CybeWatch to be the ultimate analyst companion.</p>
+      
+      <div class="stats-mini-grid">
+        <div class="stat-box">
+          <span class="stat-box-num">99.9%</span>
+          <span class="stat-box-label">Detection Rate</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-box-num">< 50ms</span>
+          <span class="stat-box-label">Analysis Latency</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-box-num">24/7</span>
+          <span class="stat-box-label">Autonomous Ops</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-box-num">v2.4</span>
+          <span class="stat-box-label">Stable Release</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="company-visual">
+       <div style="background:var(--bg3); border:1px solid var(--border2); border-radius:24px; padding:32px; box-shadow:0 40px 100px rgba(0,0,0,0.5); position:relative;">
+          <div style="font-family:var(--mono); font-size:12px; color:var(--cyan); margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">MISSION_STATEMENT.EXE</div>
+          <div style="font-size:15px; line-height:1.8; color:var(--text2);">
+            "To empower security teams with AI-driven clarity, replacing manual drudgery with automated intelligence. We don't just build dashboards; we build the future of cyber resilience."
+          </div>
+          <div style="margin-top:30px; display:flex; align-items:center; gap:12px;">
+            <div style="width:40px; height:2px; background:var(--cyan);"></div>
+            <div style="font-family:var(--mono); font-size:10px; text-transform:uppercase; color:var(--text3);">Team Glanzee Leadership</div>
+          </div>
+       </div>
+    </div>
+  </div>
+</section>
+
+<!-- INFRASTRUCTURE / SERVERS -->
+<section id="infra" class="infra-section">
+  <div class="section-head">
+    <div class="section-kicker">Global Infrastructure</div>
+    <h2>Engineered for Unstoppable Scale</h2>
+    <p>A distributed network of high-performance servers providing the backbone for your security operations.</p>
+  </div>
+  
+  <div class="infra-grid">
+    <!-- Analysis Nodes -->
+    <div class="infra-card">
+      <div class="infra-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
+      <h3>Processing Clusters</h3>
+      <p>High-GPU compute nodes dedicated to real-time LLM inference and traffic correlation.</p>
+      <div class="infra-list">
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> NVidia H100 Accelerators</div>
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 100Gbps Backbone Sync</div>
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Low-Latency Edge Inference</div>
+      </div>
+    </div>
+
+    <!-- Storage Layer -->
+    <div class="infra-card">
+      <div class="infra-icon" style="color:var(--cyan); background:rgba(0,212,255,0.1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19c2.5 0 4.5-2 4.5-4.5 0-2.3-1.7-4.2-3.9-4.5-1.1-2.6-3.7-4.5-6.6-4.5-3.3 0-6.1 2.3-6.9 5.4C2.4 11.5 1 13.3 1 15.5 1 18 3 20 5.5 20h12"/></svg></div>
+      <h3>Cloud Persistence</h3>
+      <p>Distributed Supabase backend ensures your case files and playbooks are never lost.</p>
+      <div class="infra-list">
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Real-time Sync (Supabase)</div>
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> AES-256 Multi-region Storage</div>
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Daily Automated Snapshots</div>
+      </div>
+    </div>
+
+    <!-- Global Sensors -->
+    <div class="infra-card">
+      <div class="infra-icon" style="color:var(--green); background:rgba(16,185,129,0.1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+      <h3>Distributed Sensors</h3>
+      <p>A global mesh of lightweight sensors deployed across every major cloud region.</p>
+      <div class="infra-list">
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> AWS/GCP/Azure Connectors</div>
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> On-Prem Agent Support</div>
+        <div class="infra-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> IoT & OT Mesh Integration</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team" class="team-section">
+  <div class="section-head">
+    <div class="section-kicker">The Builders</div>
+    <h2>Meet Team Glanzee</h2>
+    <p>Two vibe coders on a mission to redefine enterprise security tooling.</p>
+  </div>
+
+  <div class="team-glanzee-banner">
+    <div class="tg-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      Team Glanzee &mdash; Founded 2024
+    </div>
+    <div class="viber-strip"><span>&#x2726;</span> Both founders are certified <span>Vibe Coders</span> &mdash; Creative Thinkers &middot; UI/UX Designers &middot; Full-Stack Builders <span>&#x2726;</span></div>
+  </div>
+
+  <div class="team-cards">
+    <!-- ABHINAV -->
+    <div class="team-card lead">
+      <div class="team-photo-wrap">
+        <img src="assets/abhinav.jpg" alt="Abhinav R" class="team-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+        <div class="team-avatar" style="display:none;">AR</div>
+      </div>
+      <div class="team-founder-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Founder &amp; Leader
+      </div>
+      <div class="team-name">Abhinav R</div>
+      <div class="team-role"><span class="role-dot"></span>Team Glanzee &mdash; Lead Founder</div>
+      <div class="team-skills">
+        <span class="skill-chip purple">Vibe Coding</span>
+        <span class="skill-chip">UI/UX Design</span>
+        <span class="skill-chip green">Creative Thinker</span>
+      </div>
+      <div class="team-bio">
+        Founder and leader of Team Glanzee. Visionary vibe coder who built CybeWatch Enterprise from the ground up &mdash; combining creative design thinking, intuitive UI/UX, and next-generation security engineering.
+      </div>
+      <div class="team-social">
+        <a href="https://github.com/abhinavrenjithg-sys" target="_blank" class="soc-btn" title="GitHub">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/abhinav-r-b9135331b" target="_blank" class="soc-btn" title="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+        </a>
+        <a href="mailto:abhinavrenjithg@gmail.com" class="soc-btn" title="Email">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- SF MELENA -->
+    <div class="team-card">
+      <div class="team-photo-wrap" style="background:linear-gradient(135deg,var(--purple),var(--pink));">
+        <img src="assets/melena.jpg" alt="SF Melena" class="team-photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+        <div class="team-avatar" style="display:none;background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(236,72,153,0.15));color:var(--purple);">SM</div>
+      </div>
+      <div class="team-founder-badge co">Co-Founder</div>
+      <div class="team-name">SF Melena</div>
+      <div class="team-role" style="color:var(--text3);"><span class="role-dot" style="background:var(--purple);"></span>Team Glanzee &mdash; Co-Founder</div>
+      <div class="team-skills">
+        <span class="skill-chip purple">Vibe Coding</span>
+        <span class="skill-chip" style="background:rgba(236,72,153,0.07);border-color:rgba(236,72,153,0.18);color:#ec4899;">UI/UX Design</span>
+        <span class="skill-chip green">Creative Thinker</span>
+      </div>
+      <div class="team-bio">
+        Co-founder of Team Glanzee. Creative vibe coder with a sharp eye for design and user experience. Brings the polish, the flow, and the aesthetic vision that makes CybeWatch feel alive.
+      </div>
+      <div class="team-social">
+        <a href="#" class="soc-btn" style="opacity:0.3;cursor:default;" title="GitHub" onclick="return false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+        </a>
+        <a href="#" class="soc-btn" style="opacity:0.3;cursor:default;" title="LinkedIn" onclick="return false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    CybeWatch Enterprise
+  </div>
+  <div class="footer-copy">&copy; 2026 Team Glanzee &mdash; Abhinav R &amp; SF Melena. All rights reserved.</div>
+  <div class="footer-right">v2.4 &middot; Electron + Node</div>
+</footer>
+
+<script>
+// Animate live stats (simulated)
+function animateStats() {
+  const crit = Math.floor(Math.random() * 5) + 1;
+  const events = (500 + Math.floor(Math.random() * 900)).toLocaleString();
+  const blocked = (1200 + Math.floor(Math.random() * 400)).toLocaleString();
+  const score = 88 + Math.floor(Math.random() * 10);
+  document.getElementById('stat-crit').textContent = crit;
+  document.getElementById('stat-events').textContent = events;
+  document.getElementById('stat-blocked').textContent = blocked;
+  document.getElementById('stat-score').textContent = score;
+}
+animateStats();
+setInterval(animateStats, 2500);
+</script>
+</body>
+</html>

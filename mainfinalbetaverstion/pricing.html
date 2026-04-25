@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CybeWatch — Plans & Pricing</title>
+  <link rel="stylesheet" href="styles/base.css">
+  <style>
+    body { background: var(--bg-0); overflow-x: hidden; }
+    
+    /* Navbar */
+    .topbar {
+      height: 60px; background: var(--bg-1); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px; position: sticky; top: 0; z-index: 100;
+      justify-content: space-between;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text-1); }
+    .brand-icon {
+      width: 36px; height: 36px; background: var(--grad-cyan-purple);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .brand-icon svg { width: 20px; height: 20px; color: #fff; }
+    .brand-name { font-size: 16px; font-weight: 800; letter-spacing: -0.5px; }
+    
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+
+    /* Hero */
+    .pricing-hero { text-align: center; padding: 60px 20px 40px; }
+    .hero-title { font-size: 36px; font-weight: 800; color: var(--text-1); line-height: 1.2; margin-bottom: 16px; }
+    .hero-subtitle { font-size: 16px; color: var(--text-2); max-width: 600px; margin: 0 auto; line-height: 1.5; }
+    
+    /* Toggle */
+    .billing-toggle { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 32px; }
+    .toggle-label { font-size: 14px; font-weight: 600; color: var(--text-2); cursor: pointer; }
+    .toggle-label.active { color: var(--text-1); }
+    .toggle-switch { width: 50px; height: 26px; background: var(--cyan); border-radius: 13px; position: relative; cursor: pointer; transition: background 0.3s; }
+    .toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
+    .toggle-switch.annual::after { transform: translateX(24px); }
+    .save-badge { background: rgba(16, 185, 129, 0.15); color: var(--low); font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3); margin-left: 8px; }
+
+    /* Cards */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+    .price-card { background: var(--bg-1); border: 1px solid var(--border-2); border-radius: 16px; padding: 32px; display: flex; flex-direction: column; position: relative; transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; }
+    .price-card:hover { transform: translateY(-4px); border-color: var(--cyan); box-shadow: 0 12px 32px rgba(0, 212, 255, 0.1); }
+    .price-card.popular { border-color: var(--cyan); border-width: 2px; }
+    .popular-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--grad-blue-cyan); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .card-tier { font-size: 20px; font-weight: 700; color: var(--text-1); margin-bottom: 8px; }
+    .card-desc { font-size: 13px; color: var(--text-3); min-height: 40px; margin-bottom: 24px; line-height: 1.5; }
+    .card-price { display: flex; align-items: baseline; margin-bottom: 24px; }
+    .currency { font-size: 24px; font-weight: 600; color: var(--text-1); }
+    .amount { font-size: 48px; font-weight: 800; color: var(--text-1); letter-spacing: -2px; line-height: 1; }
+    .period { font-size: 14px; color: var(--text-3); font-weight: 500; margin-left: 8px; }
+    
+    .btn-buy { width: 100%; padding: 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-family: var(--font-sans); }
+    .btn-buy.primary { background: var(--grad-blue-cyan); color: #fff; }
+    .btn-buy.primary:hover { opacity: 0.9; box-shadow: 0 4px 16px rgba(0,212,255,0.3); }
+    .btn-buy.secondary { background: var(--bg-2); border: 1px solid var(--border-2); color: var(--text-1); }
+    .btn-buy.secondary:hover { background: var(--bg-3); border-color: var(--cyan); color: var(--cyan); }
+    
+    .features-list { display: flex; flex-direction: column; gap: 16px; margin-top: 32px; flex: 1; }
+    .feature-item { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+    .feature-icon { color: var(--low); flex-shrink: 0; margin-top: 2px; }
+    .feature-icon svg { width: 16px; height: 16px; }
+    .feature-icon.missing { color: var(--border-2); }
+
+    /* Comparison Table */
+    .compare-section { max-width: 1000px; margin: 80px auto; padding: 0 20px; }
+    .compare-title { font-size: 28px; font-weight: 800; color: var(--text-1); text-align: center; margin-bottom: 40px; }
+    .compare-table { width: 100%; border-collapse: collapse; background: var(--bg-1); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-2); }
+    .compare-table th { padding: 20px; text-align: left; background: var(--bg-2); font-size: 14px; font-weight: 700; color: var(--text-1); border-bottom: 1px solid var(--border-2); }
+    .compare-table td { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
+    .compare-table td.check { text-align: center; color: var(--low); }
+    .compare-table td.missing { text-align: center; color: var(--border-2); }
+    .compare-table tr:last-child td { border-bottom: none; }
+    
+    /* FAQ */
+    .faq-section { max-width: 800px; margin: 80px auto 100px; padding: 0 20px; }
+    .faq-title { font-size: 28px; font-weight: 800; color: var(--text-1); text-align: center; margin-bottom: 40px; }
+    .faq-grid { display: grid; gap: 16px; }
+    .faq-item { background: var(--bg-1); border: 1px solid var(--border-2); border-radius: 12px; padding: 24px; transition: border-color 0.2s; cursor: pointer; }
+    .faq-item:hover { border-color: var(--cyan); }
+    .faq-q { font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .faq-q svg { width: 18px; height: 18px; color: var(--cyan); transition: transform 0.3s; }
+    .faq-item.open .faq-q svg { transform: rotate(180deg); }
+    .faq-a { font-size: 14px; color: var(--text-3); line-height: 1.6; display: none; }
+    .faq-item.open .faq-a { display: block; }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <a href="index.html" class="brand" style="text-decoration: none; display: flex; align-items: center; gap: 12px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      </div>
+      <div class="brand-name">CybeWatch Enterprise</div>
+    </a>
+    <div class="nav-actions">
+      <a href="dashboard.html" class="btn btn-ghost">Back to Dashboard</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="pricing-hero">
+      <h1 class="hero-title">Pricing designed for securing scale</h1>
+      <p class="hero-subtitle">Start protecting your network with enterprise-grade threat detection. Transparent pricing, no hidden fees.</p>
+      
+      <div class="billing-toggle">
+        <span class="toggle-label" id="lbl-monthly">Monthly</span>
+        <div class="toggle-switch annual" id="billingToggle"></div>
+        <span class="toggle-label active" id="lbl-annual">Annually <span class="save-badge">Save 20%</span></span>
+      </div>
+    </section>
+
+    <section class="pricing-grid">
+      <!-- Free Tier -->
+      <div class="price-card">
+        <div class="card-tier">Hobby / Starter</div>
+        <div class="card-desc">Perfect for evaluating the platform on local homelabs and small networks.</div>
+        <div class="card-price">
+          <span class="currency">$</span><span class="amount">0</span><span class="period">/ mo</span>
+        </div>
+        <button class="btn-buy secondary" onclick="selectPlan('free')">Current Plan</button>
+        
+        <div class="features-list">
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Monitor up to 5 endpoints</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Basic IDS/IPS signatures</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>24-hour data retention</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon missing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>
+            <span style="color:var(--text-3)">AI Threat Correlation</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon missing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>
+            <span style="color:var(--text-3)">CSV Log Export</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pro Tier -->
+      <div class="price-card popular">
+        <div class="popular-badge">Most Popular</div>
+        <div class="card-tier">Professional</div>
+        <div class="card-desc">Full access to AI-powered SOC features for professional security analysts.</div>
+        <div class="card-price">
+          <span class="currency">$</span><span class="amount" id="price-pro">29</span><span class="period">/ mo <span style="font-size:10px" id="billed-pro">billed annually</span></span>
+        </div>
+        <button class="btn-buy primary" onclick="selectPlan('pro')">Upgrade to Pro</button>
+        
+        <div class="features-list">
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Monitor up to 100 endpoints</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span><strong>AI Threat Correlation Engine</strong></span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Live Live Threat Intel Feed</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span><strong>CSV Data Export</strong></span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>30-day data retention</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enterprise Tier -->
+      <div class="price-card">
+        <div class="card-tier">Enterprise</div>
+        <div class="card-desc">Uncapped scale, custom integrations, and dedicated support for large organizations.</div>
+        <div class="card-price">
+          <span class="amount" style="font-size:36px">Custom</span>
+        </div>
+        <button class="btn-buy secondary" onclick="alert('Contacting sales... (Demo)')">Contact Sales</button>
+        
+        <div class="features-list">
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Unlimited endpoints</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>Custom playbook creation</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>SIEM Forwarding (Splunk, Elastic)</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>1-year data retention compliance</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <span>24/7 Priority Phone Support</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="compare-section">
+      <h2 class="compare-title">Compare Plan Features</h2>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th style="width: 40%">Feature</th>
+            <th style="width: 20%; text-align: center;">Starter</th>
+            <th style="width: 20%; text-align: center; color: var(--cyan);">Professional</th>
+            <th style="width: 20%; text-align: center;">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Endpoints Monitored</strong></td>
+            <td style="text-align: center;">5</td>
+            <td style="text-align: center; font-weight: 600;">100</td>
+            <td style="text-align: center; font-weight: 600;">Unlimited</td>
+          </tr>
+          <tr>
+            <td><strong>Data Retention</strong></td>
+            <td style="text-align: center;">24 hours</td>
+            <td style="text-align: center; font-weight: 600;">30 days</td>
+            <td style="text-align: center; font-weight: 600;">1 year</td>
+          </tr>
+          <tr>
+            <td>Live Network Traffic Map</td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+          </tr>
+          <tr>
+            <td><strong>AI Threat Correlation Engine</strong></td>
+            <td class="missing"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+          </tr>
+          <tr>
+            <td>Threat Intel Feed</td>
+            <td class="missing"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+          </tr>
+          <tr>
+            <td>Data Export (CSV)</td>
+            <td class="missing"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+            <td class="check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="faq-section">
+      <h2 class="faq-title">Frequently Asked Questions</h2>
+      <div class="faq-grid">
+        <div class="faq-item" onclick="this.classList.toggle('open')">
+          <div class="faq-q"><span>How does the AI Threat Correlation work?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+          <div class="faq-a">Our AI engine analyzes patterns across multiple vectors (network, endpoints, user behavior) simultaneously. Instead of surfacing 1,000 isolated low-level alerts, it correlates them into a single high-confidence incident narrative, drastically reducing alert fatigue for Pro and Enterprise users.</div>
+        </div>
+        <div class="faq-item" onclick="this.classList.toggle('open')">
+          <div class="faq-q"><span>Can I upgrade or downgrade at any time?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+          <div class="faq-a">Yes. You can manage your subscription from the Settings panel in the dashboard. Prorated charges or credits will be automatically applied to your account balance based on your billing cycle.</div>
+        </div>
+        <div class="faq-item" onclick="this.classList.toggle('open')">
+          <div class="faq-q"><span>Does CybeWatch support on-premise deployments?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+          <div class="faq-a">On-premise deployments and isolated air-gapped networks are supported exclusively on our Enterprise tier. Please contact our sales team to discuss architectural requirements.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/engine.js"></script>
+  <script>
+    if(!TW.requireAuth()) location.href = 'index.html';
+
+    // Pricing Toggle Logic
+    let isAnnual = true;
+    const toggleBtn = document.getElementById('billingToggle');
+    const lblAnn = document.getElementById('lbl-annual');
+    const lblMon = document.getElementById('lbl-monthly');
+    const pricePro = document.getElementById('price-pro');
+    const billedPro = document.getElementById('billed-pro');
+
+    toggleBtn.addEventListener('click', () => {
+      isAnnual = !isAnnual;
+      if (isAnnual) {
+        toggleBtn.classList.add('annual');
+        lblAnn.classList.add('active'); lblMon.classList.remove('active');
+        pricePro.textContent = '29';
+        billedPro.style.display = 'inline';
+      } else {
+        toggleBtn.classList.remove('annual');
+        lblMon.classList.add('active'); lblAnn.classList.remove('active');
+        pricePro.textContent = '36';
+        billedPro.style.display = 'none';
+      }
+    });
+
+    // Plan Subscription Action
+    function selectPlan(plan) {
+      if (plan === 'free') {
+        alert("You are already on the Starter plan.");
+        return;
+      }
+      if (plan === 'pro') {
+        const confirmed = confirm("Upgrade to Professional Plan?\\n\\nThis will instantly unlock the AI Threat Correlation engine, live Threat Intel, and CSV Data Exports.\\n\\n(Demo: Click OK to simulate upgrading)");
+        if (confirmed) {
+          localStorage.setItem('tw_plan', 'pro');
+          alert("Success! Your account has been upgraded to the Professional plan.");
+          location.href = 'dashboard.html';
+        }
+      }
+    }
+  </script>
+</body>
+</html>

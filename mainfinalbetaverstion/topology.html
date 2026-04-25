@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch — Network Topology</title>
+<link rel="stylesheet" href="styles/base.css"/>
+<link rel="stylesheet" href="styles/dashboard.css"/>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+body{overflow:hidden;}
+.topology-layout{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;position:relative;}
+#topology-canvas{flex:1;background:var(--bg-0);cursor:grab;}
+#topology-canvas:active{cursor:grabbing;}
+.node-label{font-family:var(--font-mono);font-size:10px;fill:var(--text-1);pointer-events:none;}
+.node-sub{font-family:var(--font-mono);font-size:8px;fill:var(--text-3);pointer-events:none;}
+.link{stroke:var(--border-2);stroke-width:1px;}
+.link.active{stroke:var(--cyan);stroke-width:2px;stroke-dasharray:4;animation:flow 1s linear infinite;}
+@keyframes flow{to{stroke-dashoffset:-8;}}
+.top-actions{position:absolute;top:16px;right:16px;display:flex;gap:8px;z-index:10;}
+.legend-panel{position:absolute;bottom:16px;left:16px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;z-index:10;}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-2);margin-bottom:6px;}
+.legend-item:last-child{margin-bottom:0;}
+.legend-dot{width:10px;height:10px;border-radius:50%;}
+.zoom-controls{position:absolute;bottom:16px;right:16px;display:flex;flex-direction:column;gap:4px;z-index:10;}
+.zoom-btn{width:32px;height:32px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text-1);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);}
+.zoom-btn:hover{background:var(--bg-3);border-color:var(--border-2);}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand" style="text-decoration: none; display: flex; align-items: center; gap: 12px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+      <div class="brand-text"><div class="brand-name">CybeWatch</div><div class="brand-version">ENTERPRISE v2.4 � Team Glanzee</div></div>
+    </a>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-item-text">Home</span></a>
+      <div class="nav-section-label">Operations</div>
+      <a class="nav-item" data-nav="dashboard" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span class="nav-item-text">Dashboard</span></a>
+      <a class="nav-item active" data-nav="topology" href="topology.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="nav-item-text">Topology</span></a>
+      <a class="nav-item" data-nav="alerts" href="alerts.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="nav-item-text">Alerts</span><span class="nav-badge" id="alert-nav-badge" style="display:none"></span></a>
+      <a class="nav-item" data-nav="investigation" href="investigation.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="nav-item-text">Investigation</span></a>
+      <a class="nav-item" data-nav="playbooks" href="playbooks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="2" y1="12" x2="5" y2="12"/></svg><span class="nav-item-text">Playbooks</span></a>
+      <div class="nav-section-label">Intelligence</div>
+      <a class="nav-item" data-nav="intelligence" href="intelligence.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg><span class="nav-item-text">Threat Intel</span></a>
+      <div class="nav-section-label">Configuration</div>
+      <a class="nav-item" data-nav="settings" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span class="nav-item-text">Settings</span></a>
+      <a class="nav-item" data-nav="reports" href="reports.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="nav-item-text">Reports</span>
+      </a>      <a class="nav-item" data-nav="about" href="about.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="nav-item-text">About Team</span></a>
+    </nav>
+    <div class="sidebar-footer"><div class="team-credit">CybeWatch by <span>Team Glanzee</span><br/>Abhinav R &amp; SF Melena</div>
+      <div class="user-card"><div class="avatar" id="user-avatar">A</div><div class="user-info"><div class="user-name" id="user-display-name">…</div><div class="user-role" id="user-display-role">ROLE</div></div></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <button class="topbar-toggle" id="sidebar-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="threat-level-indicator">
+        <span class="tl-label">THREAT</span>
+        <div class="tl-bars"><div class="tl-bar" id="tl-bar-1"></div><div class="tl-bar" id="tl-bar-2"></div><div class="tl-bar" id="tl-bar-3"></div><div class="tl-bar" id="tl-bar-4"></div><div class="tl-bar" id="tl-bar-5"></div></div>
+        <span class="tl-text" id="tl-text">—</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Search hosts, IPs…" id="node-search"/>
+      </div>
+      <div class="topbar-actions">
+        <button class="notif-btn" id="theme-toggle-btn" title="Toggle Theme" onclick="TW.toggleTheme()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg></button>
+        <button class="notif-btn" id="notif-toggle-btn" onclick="toggleNotifications()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><div class="notif-dot"></div></button>
+        <div class="topbar-clock" id="topbar-clock">00:00:00</div>
+      </div>
+    </div>
+
+    <div class="topology-layout">
+      <div class="top-actions">
+        <button class="btn btn-ghost" onclick="simAttack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Sim Attack</button>
+        <button class="btn btn-ghost" onclick="resetZoom()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> Reset View</button>
+      </div>
+      
+      <div class="legend-panel">
+        <div class="drawer-section-title">Legend</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Gateway / Core</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--low)"></div> Healthy Endpoint</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--medium)"></div> Warning / Elevated</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--critical);box-shadow:0 0 8px var(--critical)"></div> Compromised</div>
+      </div>
+      
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="zoomOut()">-</button>
+      </div>
+
+      <svg id="topology-canvas"></svg>
+      
+      <!-- Custom Context Menu for Nodes -->
+      <div id="node-context-menu" style="display:none;position:absolute;background:var(--bg-2);border:1px solid var(--border-2);border-radius:6px;padding:8px;box-shadow:0 4px 12px rgba(0,0,0,0.5);z-index:100;min-width:150px;pointer-events:auto;">
+        <div id="cm-node-title" style="font-family:var(--font-mono);font-size:11px;color:var(--text-2);margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px;">Node</div>
+        <button class="btn btn-danger" id="cm-btn-quarantine" style="width:100%;font-size:11px;padding:4px 8px;margin-bottom:4px;display:none;">Quarantine Node</button>
+        <button class="btn btn-ghost" id="cm-btn-inspect" style="width:100%;font-size:11px;padding:4px 8px;">Inspect Properties</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script>
+if(!TW.requireAuth()) location.href='index.html';
+
+document.addEventListener('DOMContentLoaded',()=>{
+  populateUserCard();
+  initSidebar();
+  applyNotifButtonState();
+  updateThreatLevel(TW.state.threatLevel);
+  TW.startSimulation();
+  
+  initTopology();
+});
+
+let svg, simulation, link, node, zoom;
+
+function initTopology() {
+    const nodes = [
+        { id: "Core-Router", group: 1, type: "gateway", ip: "10.0.0.1", status: "ok" },
+        { id: "FW-Primary", group: 1, type: "firewall", ip: "10.0.0.2", status: "ok" },
+        
+        { id: "App-Server-1", group: 2, type: "server", ip: "10.0.1.10", status: "ok" },
+        { id: "App-Server-2", group: 2, type: "server", ip: "10.0.1.11", status: "warning" },
+        { id: "DB-Master", group: 2, type: "database", ip: "10.0.1.50", status: "ok" },
+        
+        { id: "HR-Subnet", group: 3, type: "switch", ip: "10.0.2.1", status: "ok" },
+        { id: "ws-hr-01", group: 3, type: "endpoint", ip: "10.0.2.14", status: "ok" },
+        { id: "ws-hr-02", group: 3, type: "endpoint", ip: "10.0.2.15", status: "critical" },
+        
+        { id: "Eng-Subnet", group: 4, type: "switch", ip: "10.0.3.1", status: "ok" },
+        { id: "ws-eng-01", group: 4, type: "endpoint", ip: "10.0.3.10", status: "ok" },
+        { id: "ws-eng-02", group: 4, type: "endpoint", ip: "10.0.3.11", status: "ok" },
+        { id: "ws-eng-server", group: 4, type: "server", ip: "10.0.3.50", status: "warning" }
+    ];
+
+    const links = [
+        { source: "Core-Router", target: "FW-Primary", traffic: 100 },
+        { source: "FW-Primary", target: "App-Server-1", traffic: 50 },
+        { source: "FW-Primary", target: "App-Server-2", traffic: 50 },
+        { source: "App-Server-1", target: "DB-Master", traffic: 80 },
+        { source: "App-Server-2", target: "DB-Master", traffic: 80 },
+        
+        { source: "Core-Router", target: "HR-Subnet", traffic: 20 },
+        { source: "HR-Subnet", target: "ws-hr-01", traffic: 10 },
+        { source: "HR-Subnet", target: "ws-hr-02", traffic: 10 },
+        
+        { source: "Core-Router", target: "Eng-Subnet", traffic: 40 },
+        { source: "Eng-Subnet", target: "ws-eng-01", traffic: 15 },
+        { source: "Eng-Subnet", target: "ws-eng-02", traffic: 15 },
+        { source: "Eng-Subnet", target: "ws-eng-server", traffic: 30 }
+    ];
+
+    const container = document.getElementById("topology-canvas");
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    svg = d3.select("#topology-canvas");
+    
+    zoom = d3.zoom()
+        .scaleExtent([0.5, 4])
+        .on("zoom", (event) => {
+            g.attr("transform", event.transform);
+        });
+        
+    svg.call(zoom);
+
+    const g = svg.append("g");
+
+    simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+    link = g.append("g")
+        .selectAll("line")
+        .data(links)
+        .enter().append("line")
+        .attr("class", d => d.source.id === "ws-hr-02" || d.target.id === "ws-hr-02" ? "link active" : "link");
+
+    const nodeGroup = g.append("g")
+        .selectAll("g")
+        .data(nodes)
+        .enter().append("g")
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended))
+        .on("click", (event, d) => {
+            const cm = document.getElementById('node-context-menu');
+            cm.style.display = 'block';
+            cm.style.left = (event.pageX + 10) + 'px';
+            cm.style.top = (event.pageY + 10) + 'px';
+            document.getElementById('cm-node-title').textContent = `${d.id} (${d.ip})`;
+            
+            const qBtn = document.getElementById('cm-btn-quarantine');
+            if(d.status === 'critical' && !d.quarantined) {
+              qBtn.style.display = 'block';
+              qBtn.onclick = () => quarantineNode(d);
+            } else {
+              qBtn.style.display = 'none';
+            }
+            
+            document.getElementById('cm-btn-inspect').onclick = () => {
+              cm.style.display = 'none';
+              showToast("Node Details", `${d.id} (${d.ip}) - Status: ${d.status.toUpperCase()}`, d.status === 'ok' ? 'success' : d.status === 'critical' ? 'critical' : 'warning');
+            };
+        });
+        
+    // Hide context menu on canvas click
+    svg.on("click", (e) => {
+      if(e.target.tagName === 'svg' || e.target.tagName === 'rect') {
+        document.getElementById('node-context-menu').style.display = 'none';
+      }
+    });
+
+    nodeGroup.append("circle")
+        .attr("r", d => d.group === 1 ? 16 : d.group === 2 ? 14 : parseInt(10))
+        .attr("class", "node-circle")
+        .attr("fill", d => {
+            if(d.status === 'critical') return 'var(--critical)';
+            if(d.status === 'warning') return 'var(--medium)';
+            if(d.group === 1) return 'var(--blue)';
+            return 'var(--low)';
+        })
+        .attr("stroke", d => d.status === 'critical' ? 'var(--critical)' : 'none')
+        .attr("stroke-width", d => d.status === 'critical' ? 4 : 0);
+
+    nodeGroup.append("text")
+        .attr("class", "node-label")
+        .attr("dy", 22)
+        .attr("text-anchor", "middle")
+        .text(d => d.id);
+        
+    nodeGroup.append("text")
+        .attr("class", "node-sub")
+        .attr("dy", 32)
+        .attr("text-anchor", "middle")
+        .text(d => d.ip);
+
+    simulation.on("tick", () => {
+        link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+}
+
+function quarantineNode(d) {
+  document.getElementById('node-context-menu').style.display = 'none';
+  showToast("Quarantine Protocol", `Isolating subnet routing for ${d.id}...`, "warning");
+  
+  setTimeout(() => {
+    d.quarantined = true;
+    d.status = 'isolated';
+    
+    // Visually sever links connected to this node
+    link.filter(l => l.source.id === d.id || l.target.id === d.id)
+        .transition().duration(500)
+        .style("opacity", 0)
+        .remove();
+        
+    // Gray out the isolated node
+    svg.selectAll(".node-circle").filter(n => n.id === d.id)
+       .transition().duration(500)
+       .attr("fill", "var(--bg-3)")
+       .attr("stroke-width", 0);
+       
+    showToast("Node Isolated", `${d.id} successfully removed from topology.`, "success");
+    if(window.TW && window.TW.state) window.TW.state.score += 15;
+  }, 1200);
+}
+
+function dragstarted(event, d) {
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x; d.fy = d.y;
+}
+
+function dragged(event, d) {
+  d.fx = event.x; d.fy = event.y;
+}
+
+function dragended(event, d) {
+  if (!event.active) simulation.alphaTarget(0);
+  d.fx = null; d.fy = null;
+}
+
+function zoomIn() { svg.transition().call(zoom.scaleBy, 1.2); }
+function zoomOut() { svg.transition().call(zoom.scaleBy, 0.8); }
+function resetZoom() { svg.transition().call(zoom.transform, d3.zoomIdentity); }
+
+function simAttack() {
+    showToast("Simulation", "Lateral movement attack simulated.", "high");
+    d3.selectAll(".node-circle").filter(d => d.id === 'ws-eng-01')
+      .transition().duration(500)
+      .attr("fill", "var(--critical)")
+      .attr("stroke", "var(--critical)")
+      .attr("stroke-width", 4);
+    
+    // Update data state so context menu recognizes it as critical
+    svg.selectAll("g").filter(d => d.id === 'ws-eng-01').each(d => d.status = 'critical');
+      
+    d3.selectAll("line").filter(d => d.source.id === 'Eng-Subnet' && d.target.id === 'ws-eng-01').attr("class", "link active");
+}
+
+</script>
+<script src="js/gemini-chat.js"></script>
+<script src="js/command-palette.js"></script>
+</body>
+</html>
+

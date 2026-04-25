@@ -1,0 +1,212 @@
+
+JS ERROR: Uncaught SyntaxError: Invalid or unexpected token at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/investigation.html:581
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS ERROR: Uncaught TypeError: nodes.length is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/playbooks.html:279
+JS ERROR: Uncaught TypeError: nodes.length is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/playbooks.html:279
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:632
+JS ERROR: Uncaught Error: Canvas is already in use. Chart with ID '0' must be destroyed before the canvas with ID 'traffic-chart' can be reused. at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/node_modules/chart.js/dist/chart.umd.min.js:13
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:633
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:633
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:633
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:633
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:633
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:633
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:633
+JS ERROR: Uncaught TypeError: a.id.substring is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/reports.html:633
+JS ERROR: Uncaught Error: prompt() is not supported. at node:electron/js2c/renderer_init:2
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS ERROR: Uncaught SyntaxError: Unexpected token '{' at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/engine.js:60
+JS ERROR: Uncaught ReferenceError: TW is not defined at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/login.html:179
+JS ERROR: Uncaught SyntaxError: Unexpected token '{' at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/engine.js:60
+JS ERROR: Uncaught TypeError: TW.on is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/ui.js:99
+JS ERROR: Uncaught TypeError: TW.requireAuth is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:377
+JS ERROR: Uncaught TypeError: TW.toggleTheme is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:134
+JS ERROR: Uncaught TypeError: TW.toggleTheme is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:134
+JS ERROR: Uncaught TypeError: TW.toggleTheme is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:134
+JS ERROR: Uncaught TypeError: TW.toggleTheme is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:134
+JS ERROR: Uncaught TypeError: TW.toggleTheme is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:134
+JS ERROR: Uncaught ReferenceError: triggerRedTeamSequence is not defined at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:130
+JS ERROR: Uncaught ReferenceError: triggerRedTeamSequence is not defined at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:130
+JS ERROR: Uncaught SyntaxError: Unexpected token '{' at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/engine.js:60
+JS ERROR: Uncaught TypeError: TW.on is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/ui.js:99
+JS ERROR: Uncaught TypeError: TW.requireAuth is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/alerts.html:133
+JS ERROR: Uncaught SyntaxError: Unexpected token '{' at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/engine.js:60
+JS ERROR: Uncaught TypeError: TW.on is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/ui.js:99
+JS ERROR: Uncaught TypeError: TW.requireAuth is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/topology.html:126
+JS ERROR: Uncaught SyntaxError: Unexpected token '{' at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/engine.js:60
+JS ERROR: Uncaught TypeError: TW.on is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/js/ui.js:99
+JS ERROR: Uncaught TypeError: TW.requireAuth is not a function at file:///C:/Users/ABHI/Downloads/threat-detection-system-main/threat-detection-system-main/dashboard.html:377
+JS ERROR: Uncaught Error: prompt() is not supported. at node:electron/js2c/renderer_init:2
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch
+JS Promise Rejection: Failed to fetch

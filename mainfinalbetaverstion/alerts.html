@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.addEventListener('error', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  const fs = require('fs');
+  fs.appendFileSync('electron_errors.txt', '\nJS Promise Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
+</script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch — Alerts</title>
+<link rel="stylesheet" href="styles/base.css"/>
+<link rel="stylesheet" href="styles/dashboard.css"/>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<!-- Alert Drawer -->
+<div class="alert-drawer" id="alert-drawer">
+  <div class="drawer-header">
+    <div>
+      <div style="font-size:15px;font-weight:700;color:var(--text-1);" id="drawer-title">Alert Detail</div>
+      <div style="font-size:11px;color:var(--text-3);font-family:var(--font-mono);" id="drawer-id">TW-00000</div>
+    </div>
+    <button class="btn btn-ghost" onclick="closeDrawer()" style="padding:4px 10px;">✕ Close</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+  <div class="drawer-footer" id="drawer-footer"></div>
+</div>
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand" style="text-decoration: none; display: flex; align-items: center; gap: 12px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+      <div class="brand-text"><div class="brand-name">CybeWatch</div><div class="brand-version">ENTERPRISE v2.4 � Team Glanzee</div></div>
+    </a>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-item-text">Home</span></a>
+      <div class="nav-section-label">Operations</div>
+      <a class="nav-item" data-nav="dashboard" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span class="nav-item-text">Dashboard</span></a>
+      <a class="nav-item" data-nav="topology" href="topology.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="nav-item-text">Topology</span></a>
+      <a class="nav-item active" data-nav="alerts" href="alerts.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="nav-item-text">Alerts</span><span class="nav-badge" id="alert-nav-badge" style="display:none"></span></a>
+      <a class="nav-item" data-nav="investigation" href="investigation.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="nav-item-text">Investigation</span></a>
+      <a class="nav-item" data-nav="playbooks" href="playbooks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="2" y1="12" x2="5" y2="12"/></svg><span class="nav-item-text">Playbooks</span></a>
+      <div class="nav-section-label">Intelligence</div>
+      <a class="nav-item" data-nav="intelligence" href="intelligence.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg><span class="nav-item-text">Threat Intel</span></a>
+      <a class="nav-item" data-nav="reports" href="reports.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="nav-item-text">Reports</span>
+      </a>      <a class="nav-item" data-nav="about" href="about.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="nav-item-text">About Team</span></a>
+    <div class="nav-section-label">System</div>
+      <a class="nav-item" data-nav="settings" href="settings.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span class="nav-item-text">Settings</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer"><div class="team-credit">CybeWatch by <span>Team Glanzee</span><br/>Abhinav R &amp; SF Melena</div>
+      <div class="user-card"><div class="avatar" id="user-avatar">A</div><div class="user-info"><div class="user-name" id="user-display-name">Loading…</div><div class="user-role" id="user-display-role">ROLE</div></div></div>
+      <button class="btn btn-ghost" onclick="logout()" style="width:100%;margin-top:8px;font-size:11px;">Sign Out</button>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="topbar">
+      <button class="topbar-toggle" id="sidebar-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="threat-level-indicator"><span class="tl-label">THREAT</span><div class="tl-bars"><div class="tl-bar" id="tl-bar-1"></div><div class="tl-bar" id="tl-bar-2"></div><div class="tl-bar" id="tl-bar-3"></div><div class="tl-bar" id="tl-bar-4"></div><div class="tl-bar" id="tl-bar-5"></div></div><span class="tl-text" id="tl-text">--</span></div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-actions">
+        <button class="notif-btn" id="notif-toggle-btn" onclick="toggleNotifications()" title="Notifications ON - click to mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><div class="notif-dot"></div></button>
+        <button class="notif-btn" id="theme-toggle-btn" title="Toggle Theme" onclick="TW.toggleTheme()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg></button>
+        <div class="topbar-clock" id="topbar-clock">00:00:00</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--bg-1);">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius-xs);padding:7px 12px;min-width:260px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--text-3);flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="alert-search" placeholder="Search alerts…" oninput="renderAlerts()" style="background:none;border:none;outline:none;color:var(--text-1);font-size:12px;width:100%;font-family:var(--font-sans);"/>
+      </div>
+      <select id="sev-filter" onchange="renderAlerts()" style="background:var(--bg-2);border:1px solid var(--border-2);color:var(--text-2);padding:7px 10px;border-radius:var(--radius-xs);font-size:11px;font-family:var(--font-sans);">
+        <option value="all">All Severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+      </select>
+      <select id="status-filter" onchange="renderAlerts()" style="background:var(--bg-2);border:1px solid var(--border-2);color:var(--text-2);padding:7px 10px;border-radius:var(--radius-xs);font-size:11px;font-family:var(--font-sans);">
+        <option value="all">All Statuses</option><option value="new">New</option><option value="acknowledged">Acknowledged</option><option value="investigating">Investigating</option><option value="resolved">Resolved</option>
+      </select>
+      <select id="cat-filter" onchange="renderAlerts()" style="background:var(--bg-2);border:1px solid var(--border-2);color:var(--text-2);padding:7px 10px;border-radius:var(--radius-xs);font-size:11px;font-family:var(--font-sans);">
+        <option value="all">All Categories</option><option value="Network">Network</option><option value="Endpoint">Endpoint</option><option value="Application">Application</option><option value="Data">Data</option>
+      </select>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <span id="alert-count" style="font-family:var(--font-mono);font-size:10px;color:var(--text-3);">0 alerts</span>
+        <button class="btn btn-ghost" onclick="exportCSV()" style="padding:5px 10px;font-size:11px;">Export CSV</button>
+        <button class="btn btn-ghost" onclick="bulkAction('acknowledge')" style="padding:5px 10px;font-size:11px;" data-require-perm="investigate">Ack Selected</button>
+        <button class="btn btn-ghost" onclick="bulkAction('resolve')" style="padding:5px 10px;font-size:11px;" data-require-perm="investigate">Resolve Selected</button>
+        <button class="btn btn-danger" onclick="bulkAction('escalate')" style="padding:5px 10px;font-size:11px;" data-require-perm="respond">Escalate</button>
+      </div>
+    </div>
+
+    <!-- Alert Table -->
+    <div style="flex:1;overflow:auto;min-height:0;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"/></th>
+            <th onclick="sortBy('ts')" style="cursor:pointer;">Time &#x25B4;</th>
+            <th onclick="sortBy('sev')" style="cursor:pointer;">Severity</th>
+            <th>Type</th>
+            <th>Source IP</th>
+            <th>Host</th>
+            <th>User</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="alert-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/gemini-chat.js"></script>
+<script src="js/command-palette.js"></script>
+<script>
+if(!TW.requireAuth()) location.href='index.html';
+
+let sortField='ts', sortDir=-1, selected=new Set();
+
+/* ── Render table ── */
+function renderAlerts(){
+  const q=(document.getElementById('alert-search').value||'').toLowerCase();
+  const sf=document.getElementById('sev-filter').value;
+  const stf=document.getElementById('status-filter').value;
+  const cf=document.getElementById('cat-filter').value;
+  let data=[...TW.alerts];
+  if(sf!=='all') data=data.filter(a=>a.sev===sf);
+  // 'new' status is the default open/active state in the engine
+  if(stf!=='all') data=data.filter(a=>a.status===stf);
+  if(cf!=='all') data=data.filter(a=>a.category===cf);
+  if(q) data=data.filter(a=>(a.label+a.srcIp+a.host+a.user+a.msg).toLowerCase().includes(q));
+  data.sort((a,b)=>sortDir*(a[sortField]>b[sortField]?1:-1));
+  document.getElementById('alert-count').textContent=`${data.length} alert${data.length!==1?'s':''}`;
+  document.getElementById('alert-tbody').innerHTML=data.map(a=>`
+    <tr class="${a.sev==='critical'?'row-critical':a.sev==='high'?'row-high':''}" onclick="openDrawer(${a.id})" style="cursor:pointer;">
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" value="${a.id}" onchange="toggleSel(${a.id},this.checked)"/></td>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--text-3);">${TW.formatTime(a.ts)}</td>
+      <td><span class="badge badge-${a.sev}">${a.sev.toUpperCase()}</span></td>
+      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.label}</td>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--cyan);">${a.srcIp}</td>
+      <td style="font-family:var(--font-mono);font-size:10px;">${a.host}</td>
+      <td style="font-size:11px;color:var(--text-2);">${a.user}</td>
+      <td><span class="tag">${a.category}</span></td>
+      <td><span class="status-badge status-${a.status}">${a.status}</span></td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-ghost" onclick="quickAck(${a.id})" style="padding:3px 8px;font-size:10px;" data-require-perm="investigate">Ack</button>
+        <button class="btn btn-ghost" onclick="openDrawer(${a.id})" style="padding:3px 8px;font-size:10px;">View</button>
+      </td>
+    </tr>`).join('');
+  applyRoleUI();
+}
+function sortBy(f){ if(sortField===f) sortDir*=-1; else{sortField=f;sortDir=-1;} renderAlerts(); }
+function toggleSelectAll(cb){ document.querySelectorAll('.row-check').forEach(c=>{c.checked=cb.checked;toggleSel(+c.value,cb.checked);}); }
+function toggleSel(id,on){ on?selected.add(id):selected.delete(id); }
+function bulkAction(action){ if(!selected.size){showToast('No Selection','Select at least one alert','info',3000); return;}
+  selected.forEach(id=>{const a=TW.alerts.find(x=>x.id===id);if(a) a.status=action==='escalate'?'investigating':action==='acknowledge'?'acknowledged':action;});
+  showToast('Bulk Action',`${selected.size} alert(s) ${action}d`,'success',3000); selected.clear(); renderAlerts(); }
+function quickAck(id){const a=TW.alerts.find(x=>x.id===id);if(a){a.status='acknowledged';renderAlerts();showToast('Acknowledged',`Alert TW-${String(id).padStart(5,'0')} acknowledged`,'success',2500);}}
+function exportCSV(){
+  if(!TW.requirePro('CSV/PDF Data Export')) return;
+  const rows=[['ID','Time','Severity','Type','Source IP','Host','User','Status'],...TW.alerts.map(a=>[`TW-${String(a.id).padStart(5,'0')}`,new Date(a.ts).toISOString(),a.sev,a.label,a.srcIp,a.host,a.user,a.status])];
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='CybeWatch-alerts.csv';a.click();
+  showToast('Exported',`${TW.alerts.length} alerts exported to CSV`,'success',3000);
+}
+
+/* ── Alert Drawer ── */
+function openDrawer(id){
+  const a=TW.alerts.find(x=>x.id===id);
+  if(!a) return;
+  document.getElementById('drawer-title').textContent=a.label;
+  document.getElementById('drawer-id').textContent=`TW-${String(a.id).padStart(5,'0')} • ${new Date(a.ts).toLocaleString()}`;
+  document.getElementById('drawer-body').innerHTML=`
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-item-label">Severity</div><div class="detail-item-val"><span class="badge badge-${a.sev}">${a.sev.toUpperCase()}</span></div></div>
+      <div class="detail-item"><div class="detail-item-label">Category</div><div class="detail-item-val">${a.category}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Status</div><div class="detail-item-val"><span class="status-badge status-${a.status}">${a.status}</span></div></div>
+      <div class="detail-item"><div class="detail-item-label">Impact</div><div class="detail-item-val">${a.impact}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Source IP</div><div class="detail-item-val danger" style="font-family:var(--font-mono);">${a.srcIp}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Affected Host</div><div class="detail-item-val" style="font-family:var(--font-mono);">${a.host}</div></div>
+      <div class="detail-item"><div class="detail-item-label">User Account</div><div class="detail-item-val">${a.user}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Risk Score</div><div class="detail-item-val danger">${a.score || {critical:95,high:75,medium:45,low:15}[a.sev] || 50}/100</div></div>
+    </div>
+    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);padding:12px;margin:8px 0;font-size:12px;color:var(--text-2);line-height:1.6;">${a.msg}</div>
+
+    <!-- REAL-TIME IP INTELLIGENCE -->
+    <div class="drawer-section-title" style="margin-top:12px;">
+      🌐 Real-Time IP Intelligence
+      <span style="font-size:9px;color:var(--cyan);font-family:var(--font-mono);margin-left:6px;background:rgba(0,212,255,0.1);padding:1px 6px;border-radius:8px;">LIVE DATA</span>
+    </div>
+    <div id="ip-enrichment-panel">
+      <span style="color:var(--text-3);font-size:10px;font-family:var(--font-mono);">Querying ip-api.com...</span>
+    </div>
+
+    <div class="drawer-section-title" style="margin-top:12px;">MITRE ATT&CK Tactics</div>
+    <div style="margin-bottom:12px;">${(a.mitre||[]).map(t=>`<span class="tag" style="background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.3);color:#818cf8;font-family:var(--font-mono);">${t}</span>`).join(' ')}</div>
+    <div class="drawer-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      Mitigation Steps 
+      <button class="btn btn-ghost" id="playbook-btn-${a.id}" onclick="runPlaybook(${a.id})" style="padding:2px 8px;font-size:10px;color:var(--cyan);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>Run Playbook</button>
+    </div>
+    <div id="playbook-steps-${a.id}">${(a.steps||TW.getMitigations(a.tplId)).map((s,i)=>`<div id="pb-step-${a.id}-${i}" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(99,179,237,0.05);transition:all 0.3s;"><div id="pb-icon-${a.id}-${i}" style="color:var(--text-4);font-family:var(--font-mono);font-size:11px;font-weight:700;flex-shrink:0;width:14px;">${i+1}.</div><span style="font-size:12px;color:var(--text-2);line-height:1.5;">${s}</span></div>`).join('')}</div>
+    <div class="drawer-section-title" style="margin-top:12px;">Update Alert</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div>
+        <label style="font-size:10px;color:var(--text-3);display:block;margin-bottom:4px;">Assign To</label>
+        <select id="drawer-assignee" class="input" style="font-size:12px;">
+          <option value="">Unassigned</option>
+          <option value="sara.miller">sara.miller (SOC L2)</option>
+          <option value="devops.raj">devops.raj (DevOps)</option>
+          <option value="admin.chen">admin.chen (Senior Analyst)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--text-3);display:block;margin-bottom:4px;">Status</label>
+        <select id="drawer-status" class="input" style="font-size:12px;">
+          <option value="open" ${a.status==='open'?'selected':''}>Open</option>
+          <option value="acknowledged" ${a.status==='acknowledged'?'selected':''}>Acknowledged</option>
+          <option value="investigating" ${a.status==='investigating'?'selected':''}>Investigating</option>
+          <option value="resolved" ${a.status==='resolved'?'selected':''}>Resolved</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- AI ANALYSIS SECTION -->
+    <div class="drawer-section-title" style="margin-top:12px;">
+      AI Threat Analysis
+      <span style="font-size:9px;font-weight:800;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-left:6px;">ARIA</span>
+    </div>
+    <button class="btn btn-primary" id="ai-analyze-btn" onclick="analyzeAlertWithAI(${a.id})"
+      style="width:100%;justify-content:center;margin-bottom:10px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.3);color:var(--cyan);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3M6.343 6.343l-.707-.707M12 21v-1"/><circle cx="12" cy="12" r="4"/></svg>
+      Ask ARIA — AI Analysis (Gemini)
+    </button>
+    <div id="ai-analysis-panel" style="display:none;background:linear-gradient(135deg,rgba(0,212,255,0.04),rgba(168,85,247,0.04));border:1px solid rgba(0,212,255,0.2);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:4px;">
+      <div style="padding:8px 14px;border-bottom:1px solid rgba(0,212,255,0.1);display:flex;align-items:center;gap:8px;background:rgba(0,212,255,0.06);">
+        <span style="font-size:10px;font-weight:700;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ARIA AI ANALYSIS</span>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);">Powered by Gemini 2.0 Flash</span>
+      </div>
+      <div id="ai-analysis-content"></div>
+    </div>`;
+
+  document.getElementById('drawer-footer').innerHTML=`
+    <button class="btn btn-primary" onclick="saveDrawer(${a.id})" style="flex:1;">Save Changes</button>
+    <button class="btn btn-danger" onclick="escalateAlert(${a.id})" style="flex:1;" ${!TW.can('respond')?'disabled':''}>Escalate to IR</button>
+    <button class="btn btn-ghost" onclick="closeDrawer()">Close</button>`;
+
+  document.getElementById('alert-drawer').classList.add('open');
+  document.getElementById('drawer-overlay').style.display='block';
+  applyRoleUI();
+
+  // Auto-trigger real-time IP lookup
+  if(a.srcIp && window.enrichIPRealTime) enrichIPRealTime(a.srcIp, 'ip-enrichment-panel');
+}
+
+function closeDrawer(){
+  document.getElementById('alert-drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').style.display='none';
+}
+function saveDrawer(id){
+  const a=TW.alerts.find(x=>x.id===id);
+  if(!a) return;
+  a.status=document.getElementById('drawer-status').value||a.status;
+  renderAlerts();
+  showToast('Saved',`Alert TW-${String(id).padStart(5,'0')} updated`,'success',3000);
+  closeDrawer();
+}
+function escalateAlert(id){
+  const a=TW.alerts.find(x=>x.id===id);
+  if(a){a.status='investigating'; renderAlerts();}
+  showToast('Escalated',`Case opened in Investigation workspace`,'info',4000);
+  closeDrawer();
+}
+
+/* ══════════════════════════════════════════
+   REAL-TIME IP ENRICHMENT (ip-api.com - free, no key)
+   ══════════════════════════════════════════ */
+const IP_CACHE = {};
+
+window.enrichIPRealTime = async function(ip, targetElId){
+  const el = document.getElementById(targetElId);
+  if(!el) return;
+  if(IP_CACHE[ip]){ renderIPCard(el, ip, IP_CACHE[ip]); return; }
+  el.innerHTML = '<span style="color:var(--cyan);font-size:10px;font-family:var(--font-mono);">Querying real-time IP intelligence...</span>';
+  try {
+    const res = await fetch('http://ip-api.com/json/'+ip+'?fields=status,country,countryCode,regionName,city,isp,org,as,proxy,hosting,mobile');
+    const d = await res.json();
+    if(d.status==='fail') throw new Error('lookup failed');
+    IP_CACHE[ip]=d;
+    renderIPCard(el,ip,d);
+  } catch(e){
+    el.innerHTML='<div style="font-size:10px;color:var(--text-3);padding:8px;background:var(--bg-2);border-radius:var(--radius-xs);border:1px solid var(--border);">Could not reach IP intel API. Check network connection.</div>';
+  }
+};
+
+function renderIPCard(el,ip,d){
+  const cc=(d.countryCode||'un').toLowerCase();
+  const isThreat=d.proxy||d.hosting;
+  const riskBg    =isThreat?'var(--critical-bg)':'rgba(16,185,129,0.08)';
+  const riskBorder=isThreat?'var(--critical)':'rgba(16,185,129,0.2)';
+  const riskColor =isThreat?'var(--critical)':'var(--low)';
+  const riskText  =isThreat?(d.proxy?'Proxy/VPN Detected':'Datacenter/Hosting IP'):'Clean Residential';
+  const riskIcon  =isThreat?'🚨':'✅';
+  el.innerHTML=`<div style="background:${riskBg};border:1px solid ${riskBorder};border-radius:var(--radius-sm);padding:12px;margin-top:4px; opacity:0.8;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <img src="https://flagcdn.com/16x12/${cc}.png" style="border-radius:2px;" onerror="this.style.display='none'"/>
+      <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--text-1);">${ip}</span>
+      <span style="flex:1;"></span>
+      <span style="font-size:10px;font-weight:700;color:${riskColor};background:${riskBg};border:1px solid ${riskBorder};padding:2px 8px;border-radius:10px;">${riskIcon} ${riskText}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+      <div style="background:var(--bg-3);border-radius:4px;padding:7px 10px;">
+        <div style="font-size:9px;color:var(--text-3);text-transform:uppercase;margin-bottom:3px;">Location</div>
+        <div style="font-size:11px;color:var(--text-1);">${d.city||'Unknown'}, ${d.regionName||''}</div>
+        <div style="font-size:10px;color:var(--text-3);">${d.country||'Unknown Country'}</div>
+      </div>
+      <div style="background:var(--bg-3);border-radius:4px;padding:7px 10px;">
+        <div style="font-size:9px;color:var(--text-3);text-transform:uppercase;margin-bottom:3px;">ISP / Network</div>
+        <div style="font-size:11px;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(d.isp||'Unknown').substring(0,26)}</div>
+        <div style="font-size:10px;color:var(--text-3);font-family:var(--font-mono);">${(d.as||'').split(' ')[0]||'N/A'}</div>
+      </div>
+      <div style="background:var(--bg-3);border-radius:4px;padding:7px 10px;">
+        <div style="font-size:9px;color:var(--text-3);text-transform:uppercase;margin-bottom:3px;">Proxy / VPN</div>
+        <div style="font-size:11px;color:${d.proxy?'var(--critical)':'var(--low)'};">${d.proxy?'YES - Anonymizer':'No'}</div>
+      </div>
+      <div style="background:var(--bg-3);border-radius:4px;padding:7px 10px;">
+        <div style="font-size:9px;color:var(--text-3);text-transform:uppercase;margin-bottom:3px;">Datacenter IP</div>
+        <div style="font-size:11px;color:${d.hosting?'var(--medium)':'var(--low)'};">${d.hosting?'YES - Cloud/DC Hosted':'No'}</div>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:9px;color:var(--text-3);font-family:var(--font-mono);text-align:right;">Source: ip-api.com | Real-time data</div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════
+   AI ALERT ANALYZER (Gemini)
+   ══════════════════════════════════════════ */
+const GEMINI_KEY_ALERTS='AIzaSyDKzyFY4RXqsMT5tj9AGA3k2HSF5S4ZKw8';
+const GEMINI_EP='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY_ALERTS;
+
+window.analyzeAlertWithAI=async function(alertId){
+  if(!TW.requirePro('ARIA Generative AI Analysis')) return;
+  
+  const a=TW.alerts.find(x=>x.id===alertId);
+  if(!a) return;
+  const panel=document.getElementById('ai-analysis-panel');
+  const content=document.getElementById('ai-analysis-content');
+  const btn=document.getElementById('ai-analyze-btn');
+  if(!panel||!content||!btn) return;
+  panel.style.display='block';
+  btn.disabled=true;
+  btn.innerHTML='Analyzing...';
+  content.innerHTML='<div style="padding:12px;color:var(--cyan);font-size:12px;">ARIA is analyzing this threat...</div>';
+
+  const prompt=`You are ARIA, a senior SOC AI analyst. Analyze this alert concisely.
+
+ALERT:
+- Type: ${a.label} | Severity: ${a.sev.toUpperCase()}
+- Source IP: ${a.srcIp} | Host: ${a.host} | User: ${a.user}
+- MITRE: ${(a.mitre||[]).join(', ')} | Impact: ${a.impact}
+- Description: ${a.msg}
+
+Respond in this exact format:
+
+**Threat Assessment**
+[2 sentences: what is happening and severity]
+
+**Attack Stage**
+[Where in the kill chain: Initial Access / Execution / Persistence / Lateral Movement / Exfiltration]
+
+**Immediate Actions**
+1. [Action 1]
+2. [Action 2]
+3. [Action 3]
+
+**Risk Levels**
+- Lateral Movement: [Low/Medium/High/Critical]
+- Data Exfiltration: [Low/Medium/High/Critical]
+
+Keep under 200 words. Be specific and technical.`;
+
+  try {
+    const res=await fetch(GEMINI_EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.4,maxOutputTokens:500}})});
+    if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||'HTTP '+res.status);}
+    const data=await res.json();
+    const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'No response.';
+    const rendered=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^(\d+)\. (.+)$/gm,'<div style="display:flex;gap:8px;padding:3px 0;"><span style="color:var(--cyan);font-weight:700;min-width:16px;">$1.</span><span>$2</span></div>').replace(/^- (.+)$/gm,'<div style="padding:2px 0 2px 12px;border-left:2px solid var(--border);margin:2px 0;">$1</div>').replace(/\n/g,'<br>');
+    content.innerHTML='<div style="font-size:12px;color:var(--text-2);line-height:1.7;padding:14px;">'+rendered+'</div>';
+    btn.innerHTML='Ask ARIA — AI Analysis (Gemini)';
+    btn.disabled=false;
+  } catch(err){
+    content.innerHTML='<div style="padding:14px;color:var(--critical);font-size:12px;">API Error: '+err.message+'</div>';
+    btn.innerHTML='Ask ARIA — AI Analysis (Gemini)';
+    btn.disabled=false;
+  }
+};
+
+window.runPlaybook = async function(alertId) {
+  const a = TW.alerts.find(x => x.id === alertId);
+  const btn = document.getElementById(`playbook-btn-${alertId}`);
+  if (!a || !btn) return;
+  // Ensure steps exist — generate from mitigations if not pre-populated
+  if (!a.steps || a.steps.length === 0) a.steps = TW.getMitigations(a.tplId);
+  if (a.steps.length === 0) { showToast('No Playbook', 'No mitigation steps available for this alert type.', 'info'); return; }
+
+  btn.innerHTML = `<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="margin-right:4px;"><circle cx="12" cy="12" r="10"/></svg> Executing Playbook...`;
+  btn.disabled = true;
+
+  for (let i = 0; i < a.steps.length; i++) {
+    const iconEl = document.getElementById(`pb-icon-${alertId}-${i}`);
+    const stepEl = document.getElementById(`pb-step-${alertId}-${i}`);
+    
+    // Set to running
+    if(iconEl && stepEl) {
+      iconEl.innerHTML = `<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--medium)"><circle cx="12" cy="12" r="10"/></svg>`;
+      stepEl.style.background = 'rgba(234, 179, 8, 0.05)';
+      stepEl.style.borderLeft = '2px solid var(--medium)';
+      
+      // Delay to simulate API call / agent task (SOAR simulation)
+      await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
+
+      // Set to complete
+      iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--low)"><path d="M20 6L9 17l-5-5"/></svg>`;
+      stepEl.style.background = 'rgba(16, 185, 129, 0.05)';
+      stepEl.style.borderLeft = '2px solid var(--low)';
+    }
+  }
+
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="margin-right:4px;color:var(--low)"><path d="M20 6L9 17l-5-5"/></svg> Completed`;
+  showToast('Playbook Execution Complete', `Automated remediation successful for alert TW-${String(alertId).padStart(5,'0')}`, 'success', 4000);
+  
+  // Auto-resolve alert
+  a.status = 'resolved';
+  renderAlerts();
+};
+
+document.addEventListener('DOMContentLoaded',()=>{
+  if(!TW.requireAuth()){location.href='index.html';return;}
+  populateUserCard(); initSidebar(); applyRoleUI(); applyNotifButtonState();
+  updateThreatLevel(TW.state.threatLevel);
+  TW.startSimulation();
+  renderAlerts();
+  TW.on('state:update',s=>{ updateThreatLevel(s.threatLevel); updateNavBadge(); });
+  TW.on('alert:new',()=>{ renderAlerts(); updateNavBadge(); });
+});
+</script>
+</body>
+</html>
+

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CybeWatch — Log Analyzer</title>
+<link rel="stylesheet" href="styles/base.css"/>
+<style>
+body{background:var(--bg-0);color:var(--text-1);font-family:var(--font-sans);margin:0;display:flex;height:100vh;overflow:hidden;}
+.shell{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 24px;border-bottom:1px solid var(--border);background:var(--bg-1);flex-shrink:0;}
+.topbar h1{font-size:15px;font-weight:700;margin:0;}
+.topbar p{font-size:11px;color:var(--text-3);margin:0;}
+.content{display:flex;flex:1;overflow:hidden;}
+.left-panel{width:280px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--bg-1);}
+.right-panel{flex:1;overflow-y:auto;padding:20px;}
+.panel-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;}
+.source-btn{width:100%;padding:10px 16px;background:none;border:none;border-bottom:1px solid var(--border);color:var(--text-2);text-align:left;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:10px;transition:.15s;}
+.source-btn:hover{background:var(--bg-2);color:var(--text-1);}
+.source-btn svg{flex-shrink:0;}
+.source-btn .src-label{font-weight:600;}
+.source-btn .src-desc{font-size:10px;color:var(--text-4);margin-top:2px;}
+.paste-area{flex:1;display:flex;flex-direction:column;padding:16px;gap:10px;}
+.paste-text{flex:1;background:var(--bg-2);border:1px solid var(--border-2);border-radius:8px;color:var(--text-1);font-family:var(--font-mono);font-size:11px;padding:10px;resize:none;outline:none;}
+.paste-text:focus{border-color:var(--cyan);}
+.analyse-btn{padding:9px;background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(124,58,237,.15));border:1px solid var(--cyan);color:var(--cyan);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.analyse-btn:hover{box-shadow:0 0 16px rgba(0,212,255,.3);}
+.progress-wrap{padding:16px;background:var(--bg-1);border-bottom:1px solid var(--border);}
+.progress-bar-track{height:4px;background:var(--bg-3);border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),#7c3aed);border-radius:2px;transition:width .3s ease;}
+.progress-msg{font-size:10px;color:var(--text-3);font-family:var(--font-mono);margin-top:6px;}
+/* Summary */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.sum-card{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.sum-card .num{font-size:28px;font-weight:800;font-family:var(--font-mono);}
+.sum-card .lbl{font-size:9px;color:var(--text-4);text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+/* Sources */
+.source-item{background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.source-name{font-size:12px;color:var(--text-1);font-weight:600;word-break:break-all;}
+.source-meta{font-size:10px;color:var(--text-3);font-family:var(--font-mono);margin-top:3px;}
+.source-badge{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--font-mono);background:rgba(0,212,255,.1);color:var(--cyan);}
+/* Findings table */
+.find-table{width:100%;border-collapse:collapse;font-size:11px;}
+.find-table th{padding:8px 10px;text-align:left;background:var(--bg-1);color:var(--text-4);font-weight:600;text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0;z-index:1;}
+.find-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text-2);max-width:0;}
+.find-table tr:hover td{background:var(--bg-1);}
+.find-table .raw-line{font-family:var(--font-mono);font-size:9px;color:var(--text-4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;}
+.sev-pill{padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;white-space:nowrap;}
+.sev-critical{background:rgba(255,45,85,.15);color:#ff2d55;}
+.sev-high{background:rgba(249,115,22,.15);color:#f97316;}
+.sev-medium{background:rgba(234,179,8,.15);color:#eab308;}
+.sev-low{background:rgba(16,185,129,.15);color:#10b981;}
+.mitre-tag{display:inline-block;padding:2px 5px;background:rgba(139,92,246,.15);color:#8b5cf6;border-radius:3px;font-size:8px;font-family:var(--font-mono);margin-right:3px;}
+.section-title{font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px;}
+.ip-card{display:inline-flex;align-items:center;gap:8px;background:var(--bg-1);border:1px solid var(--border);border-radius:7px;padding:8px 14px;margin:4px;}
+.ip-addr{font-family:var(--font-mono);font-size:12px;color:var(--cyan);}
+.ip-count{font-size:10px;color:var(--text-3);}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-4);}
+.no-data-msg{padding:40px;text-align:center;color:var(--text-4);font-size:12px;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;color:var(--text-2);font-size:11px;cursor:pointer;text-decoration:none;transition:.15s;}
+.back-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+.tab{padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;color:var(--text-3);transition:.15s;}
+.tab.active{background:rgba(0,212,255,.1);color:var(--cyan);border:1px solid rgba(0,212,255,.3);}
+.tab:hover:not(.active){background:var(--bg-1);color:var(--text-1);}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <a href="dashboard.html" class="back-btn">← Dashboard</a>
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" width="22" height="22"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/><polyline points="8 6 2 12 8 18"/></svg>
+    <div><h1>Log Analyzer</h1><p>Ingests real Windows Event Logs, web server logs, and pasted text to detect threats</p></div>
+  </div>
+  <div class="content">
+    <div class="left-panel">
+      <div class="panel-header">Log Sources</div>
+      <button class="source-btn" onclick="runWindowsScan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" width="18" height="18"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <div><div class="src-label">Windows Event Logs</div><div class="src-desc">Security, System, Application</div></div>
+      </button>
+      <button class="source-btn" onclick="runFullScan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><div class="src-label">Full Auto-Scan</div><div class="src-desc">Discover all available logs</div></div>
+      </button>
+      <button class="source-btn" onclick="document.getElementById('file-input').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <div><div class="src-label">Open Log File</div><div class="src-desc">Apache, Nginx, syslog…</div></div>
+      </button>
+      <input type="file" id="file-input" style="display:none" accept=".log,.txt,.evtx" onchange="openFile(event)"/>
+      <div class="panel-header" style="margin-top:8px;">Paste Raw Logs</div>
+      <div class="paste-area">
+        <textarea class="paste-text" id="paste-input" placeholder="Paste log lines here…
+Example:
+Failed password for root from 192.168.1.5 port 42001 ssh2
+GET /api?id=' OR 1=1-- HTTP/1.1 200
+Apr 23 11:34:01 srv sshd[1234]: Failed password..."></textarea>
+        <button class="analyse-btn" onclick="analysePasted()">🔍 ANALYSE PASTED LOGS</button>
+      </div>
+    </div>
+    <div class="right-panel" id="right-panel">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="stroke:var(--text-4);margin-bottom:16px;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/><polyline points="8 6 2 12 8 18"/></svg>
+        <div style="font-size:16px;font-weight:700;color:var(--text-2);">Select a log source to begin</div>
+        <p style="font-size:12px;margin-top:8px;">Analyse real Windows Event Logs, open log files, or paste raw log text.</p>
+      </div>
+    </div>
+  </div>
+  <div id="progress-bar-section" style="display:none;" class="progress-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="log-progress-fill" style="width:0%"></div></div>
+    <div class="progress-msg" id="log-progress-msg">Scanning…</div>
+  </div>
+</div>
+
+<script src="js/engine.js"></script>
+<script>
+const { ipcRenderer } = require('electron');
+const path = require('path');
+let lastResults = null;
+
+ipcRenderer.on('logs:progress', (evt, data) => {
+  document.getElementById('progress-bar-section').style.display = 'block';
+  document.getElementById('log-progress-fill').style.width = data.pct + '%';
+  document.getElementById('log-progress-msg').textContent = data.msg;
+  if (data.pct >= 100) setTimeout(() => document.getElementById('progress-bar-section').style.display = 'none', 1000);
+});
+
+async function runFullScan() {
+  document.getElementById('progress-bar-section').style.display = 'block';
+  document.getElementById('right-panel').innerHTML = '<div class="no-data-msg">Running full log scan…</div>';
+  const res = await ipcRenderer.invoke('logs:scan-all');
+  lastResults = res;
+  renderResults(res);
+}
+
+async function runWindowsScan() {
+  document.getElementById('progress-bar-section').style.display = 'block';
+  document.getElementById('log-progress-msg').textContent = 'Reading Windows Security Event Log…';
+  document.getElementById('log-progress-fill').style.width = '30%';
+  document.getElementById('right-panel').innerHTML = '<div class="no-data-msg">Reading Windows Event Logs…</div>';
+  const sec = await ipcRenderer.invoke('logs:windows-event', 'Security', 500);
+  document.getElementById('log-progress-fill').style.width = '60%';
+  const sys = await ipcRenderer.invoke('logs:windows-event', 'System', 300);
+  document.getElementById('log-progress-fill').style.width = '85%';
+  const app = await ipcRenderer.invoke('logs:windows-event', 'Application', 200);
+  document.getElementById('log-progress-fill').style.width = '100%';
+
+  const allFindings = [...(sec.findings||[]), ...(sys.findings||[]), ...(app.findings||[])];
+  const sources = [];
+  if (sec.ok) sources.push({ name: 'Windows Security Log', eventsRead: sec.eventsRead, findings: sec.findings.length });
+  if (sys.ok) sources.push({ name: 'Windows System Log', eventsRead: sys.eventsRead, findings: sys.findings.length });
+  if (app.ok) sources.push({ name: 'Windows Application Log', eventsRead: app.eventsRead, findings: app.findings.length });
+
+  const summary = aggregateLocal(allFindings);
+  lastResults = { ok: true, ts: Date.now(), sources, findings: allFindings, summary };
+  renderResults(lastResults);
+  setTimeout(() => document.getElementById('progress-bar-section').style.display = 'none', 1000);
+}
+
+function openFile(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  document.getElementById('progress-bar-section').style.display = 'block';
+  document.getElementById('log-progress-msg').textContent = `Analysing ${file.name}…`;
+  document.getElementById('log-progress-fill').style.width = '50%';
+  ipcRenderer.invoke('logs:analyse-file', file.path).then(res => {
+    document.getElementById('log-progress-fill').style.width = '100%';
+    const summary = aggregateLocal(res.findings || []);
+    lastResults = { ok: res.ok, ts: Date.now(), sources: [{ name: file.name, linesScanned: res.linesScanned, findings: (res.findings||[]).length }], findings: res.findings || [], summary };
+    renderResults(lastResults);
+    setTimeout(() => document.getElementById('progress-bar-section').style.display = 'none', 1000);
+  });
+}
+
+async function analysePasted() {
+  const text = document.getElementById('paste-input').value.trim();
+  if (!text) { alert('Please paste some log content first.'); return; }
+  const res = await ipcRenderer.invoke('logs:analyse-text', text, 'Pasted Log');
+  const summary = aggregateLocal(res.findings || []);
+  lastResults = { ok: true, ts: Date.now(), sources: [{ name: 'Pasted Log', linesScanned: res.linesScanned, findings: (res.findings||[]).length }], findings: res.findings || [], summary };
+  renderResults(lastResults);
+}
+
+function aggregateLocal(findings) {
+  const bySev = { critical: 0, high: 0, medium: 0, low: 0 };
+  const byCategory = {};
+  const ipFreq = {};
+  for (const f of findings) {
+    if (bySev[f.severity] !== undefined) bySev[f.severity]++;
+    byCategory[f.category] = (byCategory[f.category] || 0) + 1;
+    if (f.srcIp) ipFreq[f.srcIp] = (ipFreq[f.srcIp] || 0) + 1;
+  }
+  const topIPs = Object.entries(ipFreq).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([ip,count])=>({ip,count}));
+  return { total: findings.length, bySev, byCategory, topIPs };
+}
+
+function renderResults(r) {
+  if (!r || !r.ok) {
+    document.getElementById('right-panel').innerHTML = `<div class="no-data-msg" style="color:var(--critical);">${r?.error || 'Scan failed.'}</div>`;
+    return;
+  }
+  const sevColor = { critical:'#ff2d55', high:'#f97316', medium:'#eab308', low:'#10b981' };
+  let html = `
+    <div class="summary-grid">
+      ${['critical','high','medium','low'].map(s => `
+        <div class="sum-card">
+          <div class="num" style="color:${sevColor[s]};text-shadow:0 0 12px ${sevColor[s]}40">${r.summary.bySev[s]||0}</div>
+          <div class="lbl">${s}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab active" id="tab-findings" onclick="switchTab('findings')">Findings (${r.findings.length})</div>
+      <div class="tab" id="tab-sources" onclick="switchTab('sources')">Sources (${r.sources.length})</div>
+      <div class="tab" id="tab-topips" onclick="switchTab('topips')">Top IPs (${r.summary.topIPs.length})</div>
+    </div>
+
+    <div id="tab-content-findings">`;
+
+  if (r.findings.length === 0) {
+    html += `<div class="no-data-msg">✅ No threats detected in scanned log sources.</div>`;
+  } else {
+    html += `<table class="find-table">
+      <thead><tr><th>Severity</th><th>Label</th><th>Category</th><th>Source IP</th><th>MITRE</th><th>Raw Line</th></tr></thead>
+      <tbody>`;
+    for (const f of r.findings.slice(0, 500)) {
+      html += `<tr>
+        <td><span class="sev-pill sev-${f.severity}">${f.severity}</span></td>
+        <td style="color:var(--text-1);font-weight:600;white-space:nowrap">${f.label}</td>
+        <td>${f.category}</td>
+        <td style="color:var(--cyan);font-family:var(--font-mono)">${f.srcIp || '-'}</td>
+        <td>${(f.mitre||[]).map(m=>`<span class="mitre-tag">${m}</span>`).join('')}</td>
+        <td class="raw-line" title="${f.rawLine?.replace(/"/g,'&quot;')}">${f.rawLine || '-'}</td>
+      </tr>`;
+    }
+    html += `</tbody></table>`;
+    if (r.findings.length > 500) html += `<div class="no-data-msg">(Showing first 500 of ${r.findings.length} findings)</div>`;
+  }
+  html += `</div>
+
+    <div id="tab-content-sources" style="display:none">`;
+  for (const s of r.sources) {
+    html += `<div class="source-item">
+      <div><div class="source-name">${s.name}</div><div class="source-meta">${s.eventsRead !== undefined ? `Events read: ${s.eventsRead}` : `Lines scanned: ${s.linesScanned||0}`}</div></div>
+      <div class="source-badge">${s.findings} finding${s.findings !== 1 ? 's' : ''}</div>
+    </div>`;
+  }
+  if (r.sources.length === 0) html += `<div class="no-data-msg">No accessible log sources found on this system.</div>`;
+  html += `</div>
+
+    <div id="tab-content-topips" style="display:none">
+      <div class="section-title">Top Source IPs by Event Count</div>
+      <div style="display:flex;flex-wrap:wrap;">`;
+  for (const ip of r.summary.topIPs) {
+    html += `<div class="ip-card"><div class="ip-addr">${ip.ip}</div><div class="ip-count">${ip.count} events</div></div>`;
+  }
+  if (r.summary.topIPs.length === 0) html += `<div class="no-data-msg" style="padding:20px;">No source IPs identified in findings.</div>`;
+  html += `</div></div>`;
+
+  document.getElementById('right-panel').innerHTML = html;
+}
+
+function switchTab(name) {
+  ['findings','sources','topips'].forEach(t => {
+    document.getElementById(`tab-${t}`)?.classList.toggle('active', t === name);
+    const content = document.getElementById(`tab-content-${t}`);
+    if (content) content.style.display = t === name ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
