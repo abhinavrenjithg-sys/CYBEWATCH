@@ -2,7 +2,13 @@
 
 **CybeWatch** is a next-generation, AI-driven cybersecurity SaaS platform designed for real-time network monitoring, anomaly detection, and automated incident response. Built specifically for this hackathon by **Team Glanzee**, it showcases a venture-funded aesthetic combined with heavy-duty machine learning pipelines capable of neutralizing zero-day threats in milliseconds.
 
-![CybeWatch Banner](file:///C:/Users/ABHI/.gemini/antigravity/brain/3033fe8b-1749-4227-a0df-18e87dd016c0/landing_about_section_1773610876663.png)
+## 📸 Screenshots
+
+### 🖥️ Live Dashboard — Security Operations Center
+![CybeWatch Dashboard](assets/screenshots/dashboard-preview.png)
+
+### 🏠 Landing Page — Team Glanzee
+![CybeWatch Team](assets/screenshots/team-page.png)
 
 ## 🚀 Key Innovation Highlights
 
