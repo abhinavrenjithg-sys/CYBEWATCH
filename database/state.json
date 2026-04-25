@@ -1,11 +1,11 @@
 {
-  "events": 1141,
+  "events": 914,
   "threats": 99,
-  "blocked": 1666,
+  "blocked": 1700,
   "score": 40,
   "threatLevel": 5,
-  "tick": 7395,
-  "cpu": 13,
-  "mem": 64,
-  "uptime": 44935.984
+  "tick": 7516,
+  "cpu": 9,
+  "mem": 60,
+  "uptime": 45955.968
 }

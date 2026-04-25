@@ -1,5 +1,963 @@
 [
   {
+    "id": 2665,
+    "tplId": "insider",
+    "label": "Insider Threat Indicator",
+    "sev": "medium",
+    "category": "UEBA",
+    "impact": "Data Leakage",
+    "mitre": [
+      "T1078",
+      "T1213"
+    ],
+    "msg": "t.yamamoto@corp.local accessed 9078 restricted files outside business hours",
+    "srcIp": "164.94.65.84",
+    "host": "srv-web-15",
+    "user": "a.mueller",
+    "ts": 1777095581206,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Access pattern deviates from user baseline (9:00-17:00). Concurrent downloads from SharePoint/OneDrive of confidential IP directories."
+  },
+  {
+    "id": 2664,
+    "tplId": "auth_fail",
+    "label": "Auth Bypass Attempt",
+    "sev": "medium",
+    "category": "Auth",
+    "impact": "Unauthorized Access",
+    "mitre": [
+      "T1078",
+      "T1550"
+    ],
+    "msg": "JWT token replay attack from 119.134.170.87 against /api/admin endpoint",
+    "srcIp": "211.33.203.232",
+    "host": "kafka-01",
+    "user": "k.petrov",
+    "ts": 1777095521202,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
+  },
+  {
+    "id": 2663,
+    "tplId": "sqli",
+    "label": "SQL Injection",
+    "sev": "high",
+    "category": "Web App",
+    "impact": "Data Exfiltration",
+    "mitre": [
+      "T1190",
+      "T1059"
+    ],
+    "msg": "SQLi detected in GET /api/users?id= from 2.219.185.94 — UNION SELECT pattern",
+    "srcIp": "146.60.186.170",
+    "host": "srv-web-15",
+    "user": "t.yamamoto",
+    "ts": 1777095461210,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
+  },
+  {
+    "id": 2662,
+    "tplId": "anomaly",
+    "label": "Traffic Anomaly",
+    "sev": "medium",
+    "category": "Network",
+    "impact": "Potential C2 Comms",
+    "mitre": [
+      "T1571",
+      "T1008"
+    ],
+    "msg": "Beaconing pattern detected: 140.101.113.102 every 101s on non-standard port 4444",
+    "srcIp": "213.101.159.160",
+    "host": "ws-corp-118",
+    "user": "a.mueller",
+    "ts": 1777095371194,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
+  },
+  {
+    "id": 2661,
+    "tplId": "policy",
+    "label": "Policy Violation",
+    "sev": "low",
+    "category": "Compliance",
+    "impact": "Compliance Risk",
+    "mitre": [
+      "T1078"
+    ],
+    "msg": "USB device connected on srv-api-02 outside authorized list — 48GB drive",
+    "srcIp": "122.27.94.31",
+    "host": "kafka-01",
+    "user": "t.yamamoto",
+    "ts": 1777095369199,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Non-encrypted removable media connected to a restricted asset. Violates internal policy section 4.2 regarding physical peripheral hygiene."
+  },
+  {
+    "id": 2660,
+    "tplId": "vuln_scan",
+    "label": "Vulnerability Scan",
+    "sev": "low",
+    "category": "Network",
+    "impact": "Reconnaissance",
+    "mitre": [
+      "T1595",
+      "T1592"
+    ],
+    "msg": "CVE scanner from 43.139.90.126 probing 7482 endpoints for known exploits",
+    "srcIp": "141.245.185.53",
+    "host": "dc-prod-01",
+    "user": "k.petrov",
+    "ts": 1777095368195,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
+  },
+  {
+    "id": 2659,
+    "tplId": "brute",
+    "label": "SSH Brute Force",
+    "sev": "high",
+    "category": "Auth",
+    "impact": "Credential Theft",
+    "mitre": [
+      "T1110",
+      "T1021"
+    ],
+    "msg": "6324 failed SSH logins from 95.109.137.215 against 10.0.1.80 in 120s",
+    "srcIp": "40.69.143.40",
+    "host": "kafka-01",
+    "user": "l.santos",
+    "ts": 1777095363202,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Sequential login failures using common dictionary passwords. Source IP has high risk score and has been flagged by 4+ external threat feeds in the last 24h."
+  },
+  {
+    "id": 2658,
+    "tplId": "auth_fail",
+    "label": "Auth Bypass Attempt",
+    "sev": "medium",
+    "category": "Auth",
+    "impact": "Unauthorized Access",
+    "mitre": [
+      "T1078",
+      "T1550"
+    ],
+    "msg": "JWT token replay attack from 4.97.23.63 against /api/admin endpoint",
+    "srcIp": "218.103.243.100",
+    "host": "db-prod-03",
+    "user": "a.mueller",
+    "ts": 1777095357190,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
+  },
+  {
+    "id": 2657,
+    "tplId": "insider",
+    "label": "Insider Threat Indicator",
+    "sev": "medium",
+    "category": "UEBA",
+    "impact": "Data Leakage",
+    "mitre": [
+      "T1078",
+      "T1213"
+    ],
+    "msg": "l.santos@corp.local accessed 5705 restricted files outside business hours",
+    "srcIp": "179.116.235.218",
+    "host": "ws-corp-118",
+    "user": "sara.miller",
+    "ts": 1777095351195,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Access pattern deviates from user baseline (9:00-17:00). Concurrent downloads from SharePoint/OneDrive of confidential IP directories."
+  },
+  {
+    "id": 2656,
+    "tplId": "exfil",
+    "label": "Data Exfiltration",
+    "sev": "high",
+    "category": "Network",
+    "impact": "Data Breach",
+    "mitre": [
+      "T1041",
+      "T1048"
+    ],
+    "msg": "Outbound spike: 260MB to 131.244.30.199 over DNS tunneling in 5 min",
+    "srcIp": "16.194.228.139",
+    "host": "kafka-01",
+    "user": "sara.miller",
+    "ts": 1777095345191,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Unusually large TXT record responses detected on port 53. Ratio of upstream to downstream data indicates protocol tunneling for data exfiltration."
+  },
+  {
+    "id": 2655,
+    "tplId": "vuln_scan",
+    "label": "Vulnerability Scan",
+    "sev": "low",
+    "category": "Network",
+    "impact": "Reconnaissance",
+    "mitre": [
+      "T1595",
+      "T1592"
+    ],
+    "msg": "CVE scanner from 188.183.79.39 probing 8174 endpoints for known exploits",
+    "srcIp": "206.70.158.35",
+    "host": "kafka-01",
+    "user": "m.okonkwo",
+    "ts": 1777095343194,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
+  },
+  {
+    "id": 2654,
+    "tplId": "ddos",
+    "label": "DDoS Attack",
+    "sev": "critical",
+    "category": "Network",
+    "impact": "Service Disruption",
+    "mitre": [
+      "T1498",
+      "T1499"
+    ],
+    "msg": "Volumetric DDoS flood from 199.45.168.142 — 6601k+ pps UDP/ICMP to tcp/443",
+    "srcIp": "30.137.234.248",
+    "host": "srv-api-02",
+    "user": "admin.chen",
+    "ts": 1777095335197,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Anomalous surge in UDP traffic (600% above baseline) detected from 50+ geographically distinct source IPs, strongly indicating a botnet-orchestrated exhaustion attack."
+  },
+  {
+    "id": 2653,
+    "tplId": "lpe",
+    "label": "Privilege Escalation",
+    "sev": "high",
+    "category": "Endpoint",
+    "impact": "Lateral Movement",
+    "mitre": [
+      "T1068",
+      "T1134"
+    ],
+    "msg": "SUID binary exploitation on kafka-01 — root shell spawned from uid=163",
+    "srcIp": "42.238.104.43",
+    "host": "ws-corp-042",
+    "user": "a.mueller",
+    "ts": 1777095332192,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Process with low privilege user spawned a child process with effective UID 0 via `pkexec` vulnerability. Classic indicator of local privilege escalation."
+  },
+  {
+    "id": 2652,
+    "tplId": "sqli",
+    "label": "SQL Injection",
+    "sev": "high",
+    "category": "Web App",
+    "impact": "Data Exfiltration",
+    "mitre": [
+      "T1190",
+      "T1059"
+    ],
+    "msg": "SQLi detected in GET /api/users?id= from 121.111.12.28 — UNION SELECT pattern",
+    "srcIp": "90.211.234.123",
+    "host": "ws-corp-042",
+    "user": "m.okonkwo",
+    "ts": 1777095322187,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
+  },
+  {
+    "id": 2651,
+    "tplId": "ransomware",
+    "label": "Ransomware Activity",
+    "sev": "critical",
+    "category": "Endpoint",
+    "impact": "Data Destruction",
+    "mitre": [
+      "T1486",
+      "T1490"
+    ],
+    "msg": "Mass file encryption detected on kafka-01 — .locked extension — 8072 files affected",
+    "srcIp": "25.96.49.139",
+    "host": "kafka-01",
+    "user": "a.mueller",
+    "ts": 1777095320208,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Rapid succession of file rename and write operations on high-value directories followed by shadow copy deletion. Signatures align with BlackCat/ALPHV ransomware behaviors."
+  },
+  {
+    "id": 2650,
+    "tplId": "auth_fail",
+    "label": "Auth Bypass Attempt",
+    "sev": "medium",
+    "category": "Auth",
+    "impact": "Unauthorized Access",
+    "mitre": [
+      "T1078",
+      "T1550"
+    ],
+    "msg": "JWT token replay attack from 176.136.123.12 against /api/admin endpoint",
+    "srcIp": "57.27.151.27",
+    "host": "db-prod-03",
+    "user": "m.okonkwo",
+    "ts": 1777095319197,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
+  },
+  {
+    "id": 2649,
+    "tplId": "anomaly",
+    "label": "Traffic Anomaly",
+    "sev": "medium",
+    "category": "Network",
+    "impact": "Potential C2 Comms",
+    "mitre": [
+      "T1571",
+      "T1008"
+    ],
+    "msg": "Beaconing pattern detected: 120.44.213.15 every 22s on non-standard port 4444",
+    "srcIp": "115.54.20.29",
+    "host": "dc-prod-01",
+    "user": "sara.miller",
+    "ts": 1777095317211,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
+  },
+  {
+    "id": 2648,
+    "tplId": "phishing",
+    "label": "Spear Phishing",
+    "sev": "high",
+    "category": "Email",
+    "impact": "Initial Access",
+    "mitre": [
+      "T1566",
+      "T1204"
+    ],
+    "msg": "Phishing link clicked by a.mueller@corp.local — payload from 20.59.223.149",
+    "srcIp": "180.93.235.237",
+    "host": "srv-web-15",
+    "user": "devops.raj",
+    "ts": 1777095316191,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "User interacted with a URI hosted on a newly registered domain (3 days old) with suspicious TLD. Malicious payload execution followed within 12 seconds."
+  },
+  {
+    "id": 2647,
+    "tplId": "anomaly",
+    "label": "Traffic Anomaly",
+    "sev": "medium",
+    "category": "Network",
+    "impact": "Potential C2 Comms",
+    "mitre": [
+      "T1571",
+      "T1008"
+    ],
+    "msg": "Beaconing pattern detected: 143.85.184.36 every 179s on non-standard port 443",
+    "srcIp": "158.54.123.4",
+    "host": "kafka-01",
+    "user": "l.santos",
+    "ts": 1777095315189,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
+  },
+  {
+    "id": 2646,
+    "tplId": "ddos",
+    "label": "DDoS Attack",
+    "sev": "critical",
+    "category": "Network",
+    "impact": "Service Disruption",
+    "mitre": [
+      "T1498",
+      "T1499"
+    ],
+    "msg": "Volumetric DDoS flood from 75.184.147.169 — 4004k+ pps UDP/ICMP to tcp/443",
+    "srcIp": "32.135.200.116",
+    "host": "ws-corp-118",
+    "user": "m.okonkwo",
+    "ts": 1777095313606,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Anomalous surge in UDP traffic (600% above baseline) detected from 50+ geographically distinct source IPs, strongly indicating a botnet-orchestrated exhaustion attack."
+  },
+  {
+    "id": 2645,
+    "tplId": "brute",
+    "label": "SSH Brute Force",
+    "sev": "high",
+    "category": "Auth",
+    "impact": "Credential Theft",
+    "mitre": [
+      "T1110",
+      "T1021"
+    ],
+    "msg": "5321 failed SSH logins from 186.210.160.71 against 10.0.1.168 in 120s",
+    "srcIp": "58.34.189.206",
+    "host": "srv-app-01",
+    "user": "a.mueller",
+    "ts": 1777095312407,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Sequential login failures using common dictionary passwords. Source IP has high risk score and has been flagged by 4+ external threat feeds in the last 24h."
+  },
+  {
+    "id": 2644,
+    "tplId": "vuln_scan",
+    "label": "Vulnerability Scan",
+    "sev": "low",
+    "category": "Network",
+    "impact": "Reconnaissance",
+    "mitre": [
+      "T1595",
+      "T1592"
+    ],
+    "msg": "CVE scanner from 20.202.176.221 probing 8695 endpoints for known exploits",
+    "srcIp": "207.17.166.229",
+    "host": "srv-api-02",
+    "user": "a.mueller",
+    "ts": 1777095107197,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
+  },
+  {
+    "id": 2643,
+    "tplId": "anomaly",
+    "label": "Traffic Anomaly",
+    "sev": "medium",
+    "category": "Network",
+    "impact": "Potential C2 Comms",
+    "mitre": [
+      "T1571",
+      "T1008"
+    ],
+    "msg": "Beaconing pattern detected: 119.118.117.242 every 176s on non-standard port 2222",
+    "srcIp": "183.152.16.114",
+    "host": "dc-prod-01",
+    "user": "a.mueller",
+    "ts": 1777095106204,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
+  },
+  {
+    "id": 2642,
+    "tplId": "insider",
+    "label": "Insider Threat Indicator",
+    "sev": "medium",
+    "category": "UEBA",
+    "impact": "Data Leakage",
+    "mitre": [
+      "T1078",
+      "T1213"
+    ],
+    "msg": "a.mueller@corp.local accessed 703 restricted files outside business hours",
+    "srcIp": "106.243.181.106",
+    "host": "dc-prod-01",
+    "user": "t.yamamoto",
+    "ts": 1777095098196,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Access pattern deviates from user baseline (9:00-17:00). Concurrent downloads from SharePoint/OneDrive of confidential IP directories."
+  },
+  {
+    "id": 2641,
+    "tplId": "exfil",
+    "label": "Data Exfiltration",
+    "sev": "high",
+    "category": "Network",
+    "impact": "Data Breach",
+    "mitre": [
+      "T1041",
+      "T1048"
+    ],
+    "msg": "Outbound spike: 7313MB to 209.76.29.146 over DNS tunneling in 5 min",
+    "srcIp": "28.12.192.129",
+    "host": "srv-web-15",
+    "user": "k.petrov",
+    "ts": 1777095097191,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Unusually large TXT record responses detected on port 53. Ratio of upstream to downstream data indicates protocol tunneling for data exfiltration."
+  },
+  {
+    "id": 2640,
+    "tplId": "exfil",
+    "label": "Data Exfiltration",
+    "sev": "high",
+    "category": "Network",
+    "impact": "Data Breach",
+    "mitre": [
+      "T1041",
+      "T1048"
+    ],
+    "msg": "Outbound spike: 6538MB to 211.42.85.223 over DNS tunneling in 5 min",
+    "srcIp": "76.205.120.133",
+    "host": "srv-api-02",
+    "user": "m.okonkwo",
+    "ts": 1777095094196,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Unusually large TXT record responses detected on port 53. Ratio of upstream to downstream data indicates protocol tunneling for data exfiltration."
+  },
+  {
+    "id": 2639,
+    "tplId": "ransomware",
+    "label": "Ransomware Activity",
+    "sev": "critical",
+    "category": "Endpoint",
+    "impact": "Data Destruction",
+    "mitre": [
+      "T1486",
+      "T1490"
+    ],
+    "msg": "Mass file encryption detected on ws-corp-118 — .locked extension — 7263 files affected",
+    "srcIp": "124.145.177.247",
+    "host": "db-prod-03",
+    "user": "m.okonkwo",
+    "ts": 1777095093195,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Rapid succession of file rename and write operations on high-value directories followed by shadow copy deletion. Signatures align with BlackCat/ALPHV ransomware behaviors."
+  },
+  {
+    "id": 2638,
+    "tplId": "ransomware",
+    "label": "Ransomware Activity",
+    "sev": "critical",
+    "category": "Endpoint",
+    "impact": "Data Destruction",
+    "mitre": [
+      "T1486",
+      "T1490"
+    ],
+    "msg": "Mass file encryption detected on kafka-01 — .locked extension — 4049 files affected",
+    "srcIp": "115.116.176.131",
+    "host": "srv-app-01",
+    "user": "l.santos",
+    "ts": 1777095091200,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Rapid succession of file rename and write operations on high-value directories followed by shadow copy deletion. Signatures align with BlackCat/ALPHV ransomware behaviors."
+  },
+  {
+    "id": 2637,
+    "tplId": "brute",
+    "label": "SSH Brute Force",
+    "sev": "high",
+    "category": "Auth",
+    "impact": "Credential Theft",
+    "mitre": [
+      "T1110",
+      "T1021"
+    ],
+    "msg": "403 failed SSH logins from 128.111.10.7 against 10.0.1.219 in 120s",
+    "srcIp": "74.203.254.13",
+    "host": "ws-corp-118",
+    "user": "a.mueller",
+    "ts": 1777095088199,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Sequential login failures using common dictionary passwords. Source IP has high risk score and has been flagged by 4+ external threat feeds in the last 24h."
+  },
+  {
+    "id": 2636,
+    "tplId": "anomaly",
+    "label": "Traffic Anomaly",
+    "sev": "medium",
+    "category": "Network",
+    "impact": "Potential C2 Comms",
+    "mitre": [
+      "T1571",
+      "T1008"
+    ],
+    "msg": "Beaconing pattern detected: 78.94.240.38 every 21s on non-standard port 4444",
+    "srcIp": "184.31.241.37",
+    "host": "srv-api-02",
+    "user": "a.mueller",
+    "ts": 1777095087207,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
+  },
+  {
+    "id": 2635,
+    "tplId": "scan",
+    "label": "Aggressive Port Scan",
+    "sev": "medium",
+    "category": "Network",
+    "impact": "Reconnaissance",
+    "mitre": [
+      "T1046",
+      "T1595"
+    ],
+    "msg": "Nmap-style scan from 70.217.89.154 — 2676 ports probed on 10.0.0.0/24 in 8s",
+    "srcIp": "217.125.71.77",
+    "host": "dc-prod-01",
+    "user": "devops.raj",
+    "ts": 1777095085204,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Rapid TCP SYN packets across 100+ ports from a single source. Matches Nmap `-sS` stealth scan signature typically used during internal reconnaissance."
+  },
+  {
+    "id": 2634,
+    "tplId": "sqli",
+    "label": "SQL Injection",
+    "sev": "high",
+    "category": "Web App",
+    "impact": "Data Exfiltration",
+    "mitre": [
+      "T1190",
+      "T1059"
+    ],
+    "msg": "SQLi detected in GET /api/users?id= from 2.56.177.241 — UNION SELECT pattern",
+    "srcIp": "168.214.229.210",
+    "host": "ws-corp-042",
+    "user": "admin.chen",
+    "ts": 1777095083203,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
+  },
+  {
+    "id": 2633,
+    "tplId": "sqli",
+    "label": "SQL Injection",
+    "sev": "high",
+    "category": "Web App",
+    "impact": "Data Exfiltration",
+    "mitre": [
+      "T1190",
+      "T1059"
+    ],
+    "msg": "SQLi detected in GET /api/users?id= from 116.254.204.113 — UNION SELECT pattern",
+    "srcIp": "84.20.241.1",
+    "host": "ws-corp-118",
+    "user": "t.yamamoto",
+    "ts": 1777095080204,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
+  },
+  {
+    "id": 2632,
+    "tplId": "phishing",
+    "label": "Spear Phishing",
+    "sev": "high",
+    "category": "Email",
+    "impact": "Initial Access",
+    "mitre": [
+      "T1566",
+      "T1204"
+    ],
+    "msg": "Phishing link clicked by admin.chen@corp.local — payload from 31.102.188.213",
+    "srcIp": "141.235.139.34",
+    "host": "kafka-01",
+    "user": "sara.miller",
+    "ts": 1777095075197,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "User interacted with a URI hosted on a newly registered domain (3 days old) with suspicious TLD. Malicious payload execution followed within 12 seconds."
+  },
+  {
+    "id": 2631,
+    "tplId": "ddos",
+    "label": "DDoS Attack",
+    "sev": "critical",
+    "category": "Network",
+    "impact": "Service Disruption",
+    "mitre": [
+      "T1498",
+      "T1499"
+    ],
+    "msg": "Volumetric DDoS flood from 196.83.119.108 — 5307k+ pps UDP/ICMP to tcp/443",
+    "srcIp": "62.16.24.2",
+    "host": "srv-app-01",
+    "user": "admin.chen",
+    "ts": 1777095074190,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Anomalous surge in UDP traffic (600% above baseline) detected from 50+ geographically distinct source IPs, strongly indicating a botnet-orchestrated exhaustion attack."
+  },
+  {
+    "id": 2630,
+    "tplId": "ddos",
+    "label": "DDoS Attack",
+    "sev": "critical",
+    "category": "Network",
+    "impact": "Service Disruption",
+    "mitre": [
+      "T1498",
+      "T1499"
+    ],
+    "msg": "Volumetric DDoS flood from 121.87.45.121 — 6108k+ pps UDP/ICMP to tcp/443",
+    "srcIp": "122.230.197.76",
+    "host": "srv-app-01",
+    "user": "devops.raj",
+    "ts": 1777095071193,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Anomalous surge in UDP traffic (600% above baseline) detected from 50+ geographically distinct source IPs, strongly indicating a botnet-orchestrated exhaustion attack."
+  },
+  {
+    "id": 2629,
+    "tplId": "phishing",
+    "label": "Spear Phishing",
+    "sev": "high",
+    "category": "Email",
+    "impact": "Initial Access",
+    "mitre": [
+      "T1566",
+      "T1204"
+    ],
+    "msg": "Phishing link clicked by m.okonkwo@corp.local — payload from 39.167.105.154",
+    "srcIp": "99.225.181.35",
+    "host": "srv-api-02",
+    "user": "k.petrov",
+    "ts": 1777095070193,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "User interacted with a URI hosted on a newly registered domain (3 days old) with suspicious TLD. Malicious payload execution followed within 12 seconds."
+  },
+  {
+    "id": 2628,
+    "tplId": "brute",
+    "label": "SSH Brute Force",
+    "sev": "high",
+    "category": "Auth",
+    "impact": "Credential Theft",
+    "mitre": [
+      "T1110",
+      "T1021"
+    ],
+    "msg": "6036 failed SSH logins from 215.246.26.164 against 10.0.1.230 in 120s",
+    "srcIp": "19.121.248.191",
+    "host": "kafka-01",
+    "user": "m.okonkwo",
+    "ts": 1777095069191,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Sequential login failures using common dictionary passwords. Source IP has high risk score and has been flagged by 4+ external threat feeds in the last 24h."
+  },
+  {
+    "id": 2627,
+    "tplId": "c2",
+    "label": "Malware C2 Beacon",
+    "sev": "critical",
+    "category": "Endpoint",
+    "impact": "Host Compromise",
+    "mitre": [
+      "T1071",
+      "T1095"
+    ],
+    "msg": "Cobalt Strike beacon from host srv-web-15 → 96.211.59.177:443 (beaconing every 60s)",
+    "srcIp": "166.239.53.185",
+    "host": "srv-api-02",
+    "user": "k.petrov",
+    "ts": 1777095067200,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Consistent 60-second jittered heartbeats detected via encrypted tunnel. Pattern matches known Cobalt Strike Malleable C2 profiles often used by APT-29."
+  },
+  {
+    "id": 2626,
+    "tplId": "scan",
+    "label": "Aggressive Port Scan",
+    "sev": "medium",
+    "category": "Network",
+    "impact": "Reconnaissance",
+    "mitre": [
+      "T1046",
+      "T1595"
+    ],
+    "msg": "Nmap-style scan from 174.149.235.30 — 8771 ports probed on 10.0.0.0/24 in 8s",
+    "srcIp": "214.202.158.192",
+    "host": "srv-api-02",
+    "user": "t.yamamoto",
+    "ts": 1777095059194,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Rapid TCP SYN packets across 100+ ports from a single source. Matches Nmap `-sS` stealth scan signature typically used during internal reconnaissance."
+  },
+  {
+    "id": 2625,
+    "tplId": "auth_fail",
+    "label": "Auth Bypass Attempt",
+    "sev": "medium",
+    "category": "Auth",
+    "impact": "Unauthorized Access",
+    "mitre": [
+      "T1078",
+      "T1550"
+    ],
+    "msg": "JWT token replay attack from 89.139.59.88 against /api/admin endpoint",
+    "srcIp": "42.55.28.14",
+    "host": "srv-web-15",
+    "user": "admin.chen",
+    "ts": 1777095057196,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
+  },
+  {
+    "id": 2624,
+    "tplId": "auth_fail",
+    "label": "Auth Bypass Attempt",
+    "sev": "medium",
+    "category": "Auth",
+    "impact": "Unauthorized Access",
+    "mitre": [
+      "T1078",
+      "T1550"
+    ],
+    "msg": "JWT token replay attack from 38.240.54.44 against /api/admin endpoint",
+    "srcIp": "143.171.71.38",
+    "host": "srv-api-02",
+    "user": "sara.miller",
+    "ts": 1777095056206,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
+  },
+  {
+    "id": 2623,
+    "tplId": "vuln_scan",
+    "label": "Vulnerability Scan",
+    "sev": "low",
+    "category": "Network",
+    "impact": "Reconnaissance",
+    "mitre": [
+      "T1595",
+      "T1592"
+    ],
+    "msg": "CVE scanner from 65.187.184.152 probing 6468 endpoints for known exploits",
+    "srcIp": "152.170.105.36",
+    "host": "ws-corp-118",
+    "user": "m.okonkwo",
+    "ts": 1777095053195,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
+  },
+  {
+    "id": 2622,
+    "tplId": "sqli",
+    "label": "SQL Injection",
+    "sev": "high",
+    "category": "Web App",
+    "impact": "Data Exfiltration",
+    "mitre": [
+      "T1190",
+      "T1059"
+    ],
+    "msg": "SQLi detected in GET /api/users?id= from 6.243.28.74 — UNION SELECT pattern",
+    "srcIp": "82.183.57.142",
+    "host": "srv-app-01",
+    "user": "sara.miller",
+    "ts": 1777095049201,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
+  },
+  {
+    "id": 2621,
+    "tplId": "policy",
+    "label": "Policy Violation",
+    "sev": "low",
+    "category": "Compliance",
+    "impact": "Compliance Risk",
+    "mitre": [
+      "T1078"
+    ],
+    "msg": "USB device connected on dc-prod-01 outside authorized list — 236GB drive",
+    "srcIp": "4.125.30.121",
+    "host": "srv-api-02",
+    "user": "sara.miller",
+    "ts": 1777095047222,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Non-encrypted removable media connected to a restricted asset. Violates internal policy section 4.2 regarding physical peripheral hygiene."
+  },
+  {
+    "id": 2620,
+    "tplId": "scan",
+    "label": "Aggressive Port Scan",
+    "sev": "medium",
+    "category": "Network",
+    "impact": "Reconnaissance",
+    "mitre": [
+      "T1046",
+      "T1595"
+    ],
+    "msg": "Nmap-style scan from 94.18.196.10 — 2079 ports probed on 10.0.0.0/24 in 8s",
+    "srcIp": "46.188.144.140",
+    "host": "srv-api-02",
+    "user": "m.okonkwo",
+    "ts": 1777095044778,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Rapid TCP SYN packets across 100+ ports from a single source. Matches Nmap `-sS` stealth scan signature typically used during internal reconnaissance."
+  },
+  {
+    "id": 2619,
+    "tplId": "sqli",
+    "label": "SQL Injection",
+    "sev": "high",
+    "category": "Web App",
+    "impact": "Data Exfiltration",
+    "mitre": [
+      "T1190",
+      "T1059"
+    ],
+    "msg": "SQLi detected in GET /api/users?id= from 144.36.219.100 — UNION SELECT pattern",
+    "srcIp": "167.223.23.10",
+    "host": "srv-app-01",
+    "user": "m.okonkwo",
+    "ts": 1777095044563,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
+  },
+  {
+    "id": 2618,
+    "tplId": "vuln_scan",
+    "label": "Vulnerability Scan",
+    "sev": "low",
+    "category": "Network",
+    "impact": "Reconnaissance",
+    "mitre": [
+      "T1595",
+      "T1592"
+    ],
+    "msg": "CVE scanner from 188.99.192.167 probing 5342 endpoints for known exploits",
+    "srcIp": "182.53.253.44",
+    "host": "ws-corp-118",
+    "user": "devops.raj",
+    "ts": 1777094921208,
+    "status": "new",
+    "assignee": null,
+    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
+  },
+  {
     "id": 2617,
     "tplId": "ddos",
     "label": "DDoS Attack",
@@ -3024,961 +3982,5 @@
     "status": "new",
     "assignee": null,
     "aiInsight": "Process with low privilege user spawned a child process with effective UID 0 via `pkexec` vulnerability. Classic indicator of local privilege escalation."
-  },
-  {
-    "id": 2465,
-    "tplId": "exfil",
-    "label": "Data Exfiltration",
-    "sev": "high",
-    "category": "Network",
-    "impact": "Data Breach",
-    "mitre": [
-      "T1041",
-      "T1048"
-    ],
-    "msg": "Outbound spike: 1388MB to 172.82.116.43 over DNS tunneling in 5 min",
-    "srcIp": "31.179.84.246",
-    "host": "ws-corp-042",
-    "user": "devops.raj",
-    "ts": 1777055554005,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Unusually large TXT record responses detected on port 53. Ratio of upstream to downstream data indicates protocol tunneling for data exfiltration."
-  },
-  {
-    "id": 2464,
-    "tplId": "policy",
-    "label": "Policy Violation",
-    "sev": "low",
-    "category": "Compliance",
-    "impact": "Compliance Risk",
-    "mitre": [
-      "T1078"
-    ],
-    "msg": "USB device connected on ws-corp-042 outside authorized list — 71GB drive",
-    "srcIp": "206.117.220.96",
-    "host": "kafka-01",
-    "user": "admin.chen",
-    "ts": 1777055550406,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Non-encrypted removable media connected to a restricted asset. Violates internal policy section 4.2 regarding physical peripheral hygiene."
-  },
-  {
-    "id": 2463,
-    "tplId": "auth_fail",
-    "label": "Auth Bypass Attempt",
-    "sev": "medium",
-    "category": "Auth",
-    "impact": "Unauthorized Access",
-    "mitre": [
-      "T1078",
-      "T1550"
-    ],
-    "msg": "JWT token replay attack from 206.15.182.198 against /api/admin endpoint",
-    "srcIp": "190.2.88.182",
-    "host": "kafka-01",
-    "user": "t.yamamoto",
-    "ts": 1777055549205,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
-  },
-  {
-    "id": 2462,
-    "tplId": "ransomware",
-    "label": "Ransomware Activity",
-    "sev": "critical",
-    "category": "Endpoint",
-    "impact": "Data Destruction",
-    "mitre": [
-      "T1486",
-      "T1490"
-    ],
-    "msg": "Mass file encryption detected on kafka-01 — .locked extension — 4690 files affected",
-    "srcIp": "85.43.97.139",
-    "host": "srv-app-01",
-    "user": "admin.chen",
-    "ts": 1777055544407,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Rapid succession of file rename and write operations on high-value directories followed by shadow copy deletion. Signatures align with BlackCat/ALPHV ransomware behaviors."
-  },
-  {
-    "id": 2461,
-    "tplId": "c2",
-    "label": "Malware C2 Beacon",
-    "sev": "critical",
-    "category": "Endpoint",
-    "impact": "Host Compromise",
-    "mitre": [
-      "T1071",
-      "T1095"
-    ],
-    "msg": "Cobalt Strike beacon from host srv-api-02 → 196.218.174.122:443 (beaconing every 60s)",
-    "srcIp": "144.191.114.209",
-    "host": "kafka-01",
-    "user": "k.petrov",
-    "ts": 1777055542005,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Consistent 60-second jittered heartbeats detected via encrypted tunnel. Pattern matches known Cobalt Strike Malleable C2 profiles often used by APT-29."
-  },
-  {
-    "id": 2460,
-    "tplId": "ddos",
-    "label": "DDoS Attack",
-    "sev": "critical",
-    "category": "Network",
-    "impact": "Service Disruption",
-    "mitre": [
-      "T1498",
-      "T1499"
-    ],
-    "msg": "Volumetric DDoS flood from 77.124.237.19 — 7422k+ pps UDP/ICMP to tcp/443",
-    "srcIp": "27.5.146.67",
-    "host": "db-prod-03",
-    "user": "m.okonkwo",
-    "ts": 1777055539608,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Anomalous surge in UDP traffic (600% above baseline) detected from 50+ geographically distinct source IPs, strongly indicating a botnet-orchestrated exhaustion attack."
-  },
-  {
-    "id": 2459,
-    "tplId": "auth_fail",
-    "label": "Auth Bypass Attempt",
-    "sev": "medium",
-    "category": "Auth",
-    "impact": "Unauthorized Access",
-    "mitre": [
-      "T1078",
-      "T1550"
-    ],
-    "msg": "JWT token replay attack from 199.158.116.108 against /api/admin endpoint",
-    "srcIp": "68.210.195.38",
-    "host": "srv-api-02",
-    "user": "admin.chen",
-    "ts": 1777055538407,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
-  },
-  {
-    "id": 2458,
-    "tplId": "insider",
-    "label": "Insider Threat Indicator",
-    "sev": "medium",
-    "category": "UEBA",
-    "impact": "Data Leakage",
-    "mitre": [
-      "T1078",
-      "T1213"
-    ],
-    "msg": "k.petrov@corp.local accessed 2318 restricted files outside business hours",
-    "srcIp": "168.57.26.152",
-    "host": "srv-api-02",
-    "user": "t.yamamoto",
-    "ts": 1777055532406,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Access pattern deviates from user baseline (9:00-17:00). Concurrent downloads from SharePoint/OneDrive of confidential IP directories."
-  },
-  {
-    "id": 2457,
-    "tplId": "anomaly",
-    "label": "Traffic Anomaly",
-    "sev": "medium",
-    "category": "Network",
-    "impact": "Potential C2 Comms",
-    "mitre": [
-      "T1571",
-      "T1008"
-    ],
-    "msg": "Beaconing pattern detected: 66.54.238.179 every 209s on non-standard port 9001",
-    "srcIp": "171.211.168.129",
-    "host": "db-prod-03",
-    "user": "sara.miller",
-    "ts": 1777055531205,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
-  },
-  {
-    "id": 2456,
-    "tplId": "vuln_scan",
-    "label": "Vulnerability Scan",
-    "sev": "low",
-    "category": "Network",
-    "impact": "Reconnaissance",
-    "mitre": [
-      "T1595",
-      "T1592"
-    ],
-    "msg": "CVE scanner from 60.51.60.95 probing 1918 endpoints for known exploits",
-    "srcIp": "168.176.184.185",
-    "host": "srv-web-15",
-    "user": "m.okonkwo",
-    "ts": 1777055521602,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
-  },
-  {
-    "id": 2455,
-    "tplId": "sqli",
-    "label": "SQL Injection",
-    "sev": "high",
-    "category": "Web App",
-    "impact": "Data Exfiltration",
-    "mitre": [
-      "T1190",
-      "T1059"
-    ],
-    "msg": "SQLi detected in GET /api/users?id= from 21.51.122.52 — UNION SELECT pattern",
-    "srcIp": "88.89.200.43",
-    "host": "srv-api-02",
-    "user": "sara.miller",
-    "ts": 1777055518005,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
-  },
-  {
-    "id": 2454,
-    "tplId": "auth_fail",
-    "label": "Auth Bypass Attempt",
-    "sev": "medium",
-    "category": "Auth",
-    "impact": "Unauthorized Access",
-    "mitre": [
-      "T1078",
-      "T1550"
-    ],
-    "msg": "JWT token replay attack from 112.76.230.100 against /api/admin endpoint",
-    "srcIp": "84.71.93.81",
-    "host": "db-prod-03",
-    "user": "t.yamamoto",
-    "ts": 1777055516802,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
-  },
-  {
-    "id": 2453,
-    "tplId": "vuln_scan",
-    "label": "Vulnerability Scan",
-    "sev": "low",
-    "category": "Network",
-    "impact": "Reconnaissance",
-    "mitre": [
-      "T1595",
-      "T1592"
-    ],
-    "msg": "CVE scanner from 79.252.17.41 probing 3508 endpoints for known exploits",
-    "srcIp": "168.172.243.139",
-    "host": "srv-api-02",
-    "user": "k.petrov",
-    "ts": 1777055513205,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
-  },
-  {
-    "id": 2452,
-    "tplId": "ddos",
-    "label": "DDoS Attack",
-    "sev": "critical",
-    "category": "Network",
-    "impact": "Service Disruption",
-    "mitre": [
-      "T1498",
-      "T1499"
-    ],
-    "msg": "Volumetric DDoS flood from 49.207.111.241 — 9950k+ pps UDP/ICMP to tcp/443",
-    "srcIp": "35.67.125.68",
-    "host": "ws-corp-042",
-    "user": "t.yamamoto",
-    "ts": 1777055506004,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Anomalous surge in UDP traffic (600% above baseline) detected from 50+ geographically distinct source IPs, strongly indicating a botnet-orchestrated exhaustion attack."
-  },
-  {
-    "id": 2451,
-    "tplId": "anomaly",
-    "label": "Traffic Anomaly",
-    "sev": "medium",
-    "category": "Network",
-    "impact": "Potential C2 Comms",
-    "mitre": [
-      "T1571",
-      "T1008"
-    ],
-    "msg": "Beaconing pattern detected: 34.63.140.40 every 50s on non-standard port 3306",
-    "srcIp": "17.106.214.40",
-    "host": "kafka-01",
-    "user": "sara.miller",
-    "ts": 1777055503608,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
-  },
-  {
-    "id": 2450,
-    "tplId": "anomaly",
-    "label": "Traffic Anomaly",
-    "sev": "medium",
-    "category": "Network",
-    "impact": "Potential C2 Comms",
-    "mitre": [
-      "T1571",
-      "T1008"
-    ],
-    "msg": "Beaconing pattern detected: 28.176.201.190 every 222s on non-standard port 8080",
-    "srcIp": "47.235.78.132",
-    "host": "ws-corp-042",
-    "user": "sara.miller",
-    "ts": 1777055501204,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
-  },
-  {
-    "id": 2449,
-    "tplId": "exfil",
-    "label": "Data Exfiltration",
-    "sev": "high",
-    "category": "Network",
-    "impact": "Data Breach",
-    "mitre": [
-      "T1041",
-      "T1048"
-    ],
-    "msg": "Outbound spike: 1258MB to 183.175.148.102 over DNS tunneling in 5 min",
-    "srcIp": "96.36.117.62",
-    "host": "srv-app-01",
-    "user": "l.santos",
-    "ts": 1777055495205,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Unusually large TXT record responses detected on port 53. Ratio of upstream to downstream data indicates protocol tunneling for data exfiltration."
-  },
-  {
-    "id": 2448,
-    "tplId": "vuln_scan",
-    "label": "Vulnerability Scan",
-    "sev": "low",
-    "category": "Network",
-    "impact": "Reconnaissance",
-    "mitre": [
-      "T1595",
-      "T1592"
-    ],
-    "msg": "CVE scanner from 51.98.50.217 probing 5730 endpoints for known exploits",
-    "srcIp": "77.37.80.115",
-    "host": "kafka-01",
-    "user": "sara.miller",
-    "ts": 1777055489204,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
-  },
-  {
-    "id": 2447,
-    "tplId": "vuln_scan",
-    "label": "Vulnerability Scan",
-    "sev": "low",
-    "category": "Network",
-    "impact": "Reconnaissance",
-    "mitre": [
-      "T1595",
-      "T1592"
-    ],
-    "msg": "CVE scanner from 20.155.68.254 probing 9929 endpoints for known exploits",
-    "srcIp": "126.183.102.103",
-    "host": "ws-corp-042",
-    "user": "devops.raj",
-    "ts": 1777055488004,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Requests containing known vulnerability probes (e.g., Log4Shell JNDI lookups) targeting various public endpoints. Likely automated mass-scanning."
-  },
-  {
-    "id": 2446,
-    "tplId": "ransomware",
-    "label": "Ransomware Activity",
-    "sev": "critical",
-    "category": "Endpoint",
-    "impact": "Data Destruction",
-    "mitre": [
-      "T1486",
-      "T1490"
-    ],
-    "msg": "Mass file encryption detected on db-prod-03 — .locked extension — 2395 files affected",
-    "srcIp": "212.66.186.249",
-    "host": "ws-corp-042",
-    "user": "a.mueller",
-    "ts": 1777055486802,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Rapid succession of file rename and write operations on high-value directories followed by shadow copy deletion. Signatures align with BlackCat/ALPHV ransomware behaviors."
-  },
-  {
-    "id": 2445,
-    "tplId": "policy",
-    "label": "Policy Violation",
-    "sev": "low",
-    "category": "Compliance",
-    "impact": "Compliance Risk",
-    "mitre": [
-      "T1078"
-    ],
-    "msg": "USB device connected on srv-app-01 outside authorized list — 74GB drive",
-    "srcIp": "174.132.254.238",
-    "host": "db-prod-03",
-    "user": "m.okonkwo",
-    "ts": 1777055484406,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Non-encrypted removable media connected to a restricted asset. Violates internal policy section 4.2 regarding physical peripheral hygiene."
-  },
-  {
-    "id": 2444,
-    "tplId": "c2",
-    "label": "Malware C2 Beacon",
-    "sev": "critical",
-    "category": "Endpoint",
-    "impact": "Host Compromise",
-    "mitre": [
-      "T1071",
-      "T1095"
-    ],
-    "msg": "Cobalt Strike beacon from host ws-corp-042 → 120.130.222.247:443 (beaconing every 60s)",
-    "srcIp": "56.120.219.118",
-    "host": "srv-app-01",
-    "user": "k.petrov",
-    "ts": 1777055482011,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Consistent 60-second jittered heartbeats detected via encrypted tunnel. Pattern matches known Cobalt Strike Malleable C2 profiles often used by APT-29."
-  },
-  {
-    "id": 2443,
-    "tplId": "auth_fail",
-    "label": "Auth Bypass Attempt",
-    "sev": "medium",
-    "category": "Auth",
-    "impact": "Unauthorized Access",
-    "mitre": [
-      "T1078",
-      "T1550"
-    ],
-    "msg": "JWT token replay attack from 5.130.10.100 against /api/admin endpoint",
-    "srcIp": "199.130.169.19",
-    "host": "srv-web-15",
-    "user": "a.mueller",
-    "ts": 1777055477204,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
-  },
-  {
-    "id": 2442,
-    "tplId": "insider",
-    "label": "Insider Threat Indicator",
-    "sev": "medium",
-    "category": "UEBA",
-    "impact": "Data Leakage",
-    "mitre": [
-      "T1078",
-      "T1213"
-    ],
-    "msg": "devops.raj@corp.local accessed 1237 restricted files outside business hours",
-    "srcIp": "99.76.60.240",
-    "host": "srv-web-15",
-    "user": "t.yamamoto",
-    "ts": 1777055476005,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Access pattern deviates from user baseline (9:00-17:00). Concurrent downloads from SharePoint/OneDrive of confidential IP directories."
-  },
-  {
-    "id": 2441,
-    "tplId": "sqli",
-    "label": "SQL Injection",
-    "sev": "high",
-    "category": "Web App",
-    "impact": "Data Exfiltration",
-    "mitre": [
-      "T1190",
-      "T1059"
-    ],
-    "msg": "SQLi detected in GET /api/users?id= from 79.16.143.214 — UNION SELECT pattern",
-    "srcIp": "120.103.238.41",
-    "host": "db-prod-03",
-    "user": "m.okonkwo",
-    "ts": 1777055474801,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
-  },
-  {
-    "id": 2440,
-    "tplId": "insider",
-    "label": "Insider Threat Indicator",
-    "sev": "medium",
-    "category": "UEBA",
-    "impact": "Data Leakage",
-    "mitre": [
-      "T1078",
-      "T1213"
-    ],
-    "msg": "k.petrov@corp.local accessed 7471 restricted files outside business hours",
-    "srcIp": "188.32.73.1",
-    "host": "dc-prod-01",
-    "user": "k.petrov",
-    "ts": 1777055471204,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Access pattern deviates from user baseline (9:00-17:00). Concurrent downloads from SharePoint/OneDrive of confidential IP directories."
-  },
-  {
-    "id": 2439,
-    "tplId": "auth_fail",
-    "label": "Auth Bypass Attempt",
-    "sev": "medium",
-    "category": "Auth",
-    "impact": "Unauthorized Access",
-    "mitre": [
-      "T1078",
-      "T1550"
-    ],
-    "msg": "JWT token replay attack from 209.152.235.5 against /api/admin endpoint",
-    "srcIp": "136.50.116.18",
-    "host": "srv-api-02",
-    "user": "admin.chen",
-    "ts": 1777055468802,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
-  },
-  {
-    "id": 2438,
-    "tplId": "ransomware",
-    "label": "Ransomware Activity",
-    "sev": "critical",
-    "category": "Endpoint",
-    "impact": "Data Destruction",
-    "mitre": [
-      "T1486",
-      "T1490"
-    ],
-    "msg": "Mass file encryption detected on ws-corp-042 — .locked extension — 9661 files affected",
-    "srcIp": "103.145.80.49",
-    "host": "srv-web-15",
-    "user": "l.santos",
-    "ts": 1777055467607,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Rapid succession of file rename and write operations on high-value directories followed by shadow copy deletion. Signatures align with BlackCat/ALPHV ransomware behaviors."
-  },
-  {
-    "id": 2437,
-    "tplId": "sqli",
-    "label": "SQL Injection",
-    "sev": "high",
-    "category": "Web App",
-    "impact": "Data Exfiltration",
-    "mitre": [
-      "T1190",
-      "T1059"
-    ],
-    "msg": "SQLi detected in GET /api/users?id= from 85.162.5.222 — UNION SELECT pattern",
-    "srcIp": "6.209.254.52",
-    "host": "ws-corp-118",
-    "user": "l.santos",
-    "ts": 1777055466406,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Injected characters (`' OR 1=1`) detected in application layer logs. Payload attempted to dump user table schema via the `/api/users` endpoint."
-  },
-  {
-    "id": 2436,
-    "tplId": "anomaly",
-    "label": "Traffic Anomaly",
-    "sev": "medium",
-    "category": "Network",
-    "impact": "Potential C2 Comms",
-    "mitre": [
-      "T1571",
-      "T1008"
-    ],
-    "msg": "Beaconing pattern detected: 9.3.180.225 every 130s on non-standard port 4444",
-    "srcIp": "187.124.56.74",
-    "host": "srv-app-01",
-    "user": "t.yamamoto",
-    "ts": 1777055462802,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
-  },
-  {
-    "id": 2435,
-    "tplId": "exfil",
-    "label": "Data Exfiltration",
-    "sev": "high",
-    "category": "Network",
-    "impact": "Data Breach",
-    "mitre": [
-      "T1041",
-      "T1048"
-    ],
-    "msg": "Outbound spike: 451MB to 65.238.212.86 over DNS tunneling in 5 min",
-    "srcIp": "75.185.52.71",
-    "host": "ws-corp-118",
-    "user": "a.mueller",
-    "ts": 1777055461607,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Unusually large TXT record responses detected on port 53. Ratio of upstream to downstream data indicates protocol tunneling for data exfiltration."
-  },
-  {
-    "id": 2434,
-    "tplId": "phishing",
-    "label": "Spear Phishing",
-    "sev": "high",
-    "category": "Email",
-    "impact": "Initial Access",
-    "mitre": [
-      "T1566",
-      "T1204"
-    ],
-    "msg": "Phishing link clicked by a.mueller@corp.local — payload from 160.66.105.91",
-    "srcIp": "205.113.233.204",
-    "host": "ws-corp-042",
-    "user": "l.santos",
-    "ts": 1777055460405,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "User interacted with a URI hosted on a newly registered domain (3 days old) with suspicious TLD. Malicious payload execution followed within 12 seconds."
-  },
-  {
-    "id": 2433,
-    "tplId": "auth_fail",
-    "label": "Auth Bypass Attempt",
-    "sev": "medium",
-    "category": "Auth",
-    "impact": "Unauthorized Access",
-    "mitre": [
-      "T1078",
-      "T1550"
-    ],
-    "msg": "JWT token replay attack from 158.59.117.129 against /api/admin endpoint",
-    "srcIp": "105.229.205.19",
-    "host": "srv-api-02",
-    "user": "k.petrov",
-    "ts": 1777055458004,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
-  },
-  {
-    "id": 2432,
-    "tplId": "phishing",
-    "label": "Spear Phishing",
-    "sev": "high",
-    "category": "Email",
-    "impact": "Initial Access",
-    "mitre": [
-      "T1566",
-      "T1204"
-    ],
-    "msg": "Phishing link clicked by sara.miller@corp.local — payload from 80.95.221.76",
-    "srcIp": "94.235.57.100",
-    "host": "dc-prod-01",
-    "user": "k.petrov",
-    "ts": 1777055450801,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "User interacted with a URI hosted on a newly registered domain (3 days old) with suspicious TLD. Malicious payload execution followed within 12 seconds."
-  },
-  {
-    "id": 2431,
-    "tplId": "auth_fail",
-    "label": "Auth Bypass Attempt",
-    "sev": "medium",
-    "category": "Auth",
-    "impact": "Unauthorized Access",
-    "mitre": [
-      "T1078",
-      "T1550"
-    ],
-    "msg": "JWT token replay attack from 31.88.6.174 against /api/admin endpoint",
-    "srcIp": "153.234.246.38",
-    "host": "srv-api-02",
-    "user": "k.petrov",
-    "ts": 1777055448407,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
-  },
-  {
-    "id": 2430,
-    "tplId": "policy",
-    "label": "Policy Violation",
-    "sev": "low",
-    "category": "Compliance",
-    "impact": "Compliance Risk",
-    "mitre": [
-      "T1078"
-    ],
-    "msg": "USB device connected on srv-app-01 outside authorized list — 3GB drive",
-    "srcIp": "173.240.109.204",
-    "host": "ws-corp-042",
-    "user": "t.yamamoto",
-    "ts": 1777055447204,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Non-encrypted removable media connected to a restricted asset. Violates internal policy section 4.2 regarding physical peripheral hygiene."
-  },
-  {
-    "id": 2429,
-    "tplId": "phishing",
-    "label": "Spear Phishing",
-    "sev": "high",
-    "category": "Email",
-    "impact": "Initial Access",
-    "mitre": [
-      "T1566",
-      "T1204"
-    ],
-    "msg": "Phishing link clicked by l.santos@corp.local — payload from 170.6.52.24",
-    "srcIp": "77.198.221.155",
-    "host": "srv-web-15",
-    "user": "t.yamamoto",
-    "ts": 1777055446004,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "User interacted with a URI hosted on a newly registered domain (3 days old) with suspicious TLD. Malicious payload execution followed within 12 seconds."
-  },
-  {
-    "id": 2428,
-    "tplId": "anomaly",
-    "label": "Traffic Anomaly",
-    "sev": "medium",
-    "category": "Network",
-    "impact": "Potential C2 Comms",
-    "mitre": [
-      "T1571",
-      "T1008"
-    ],
-    "msg": "Beaconing pattern detected: 35.223.102.197 every 36s on non-standard port 443",
-    "srcIp": "98.231.14.224",
-    "host": "db-prod-03",
-    "user": "sara.miller",
-    "ts": 1777055444801,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
-  },
-  {
-    "id": 2427,
-    "tplId": "policy",
-    "label": "Policy Violation",
-    "sev": "low",
-    "category": "Compliance",
-    "impact": "Compliance Risk",
-    "mitre": [
-      "T1078"
-    ],
-    "msg": "USB device connected on srv-api-02 outside authorized list — 13GB drive",
-    "srcIp": "129.105.149.4",
-    "host": "ws-corp-042",
-    "user": "k.petrov",
-    "ts": 1777055440003,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Non-encrypted removable media connected to a restricted asset. Violates internal policy section 4.2 regarding physical peripheral hygiene."
-  },
-  {
-    "id": 2426,
-    "tplId": "brute",
-    "label": "SSH Brute Force",
-    "sev": "high",
-    "category": "Auth",
-    "impact": "Credential Theft",
-    "mitre": [
-      "T1110",
-      "T1021"
-    ],
-    "msg": "771 failed SSH logins from 176.217.60.18 against 10.0.1.200 in 120s",
-    "srcIp": "79.6.247.169",
-    "host": "srv-api-02",
-    "user": "l.santos",
-    "ts": 1777055438801,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Sequential login failures using common dictionary passwords. Source IP has high risk score and has been flagged by 4+ external threat feeds in the last 24h."
-  },
-  {
-    "id": 2425,
-    "tplId": "insider",
-    "label": "Insider Threat Indicator",
-    "sev": "medium",
-    "category": "UEBA",
-    "impact": "Data Leakage",
-    "mitre": [
-      "T1078",
-      "T1213"
-    ],
-    "msg": "t.yamamoto@corp.local accessed 3439 restricted files outside business hours",
-    "srcIp": "14.185.243.120",
-    "host": "srv-api-02",
-    "user": "devops.raj",
-    "ts": 1777055437608,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Access pattern deviates from user baseline (9:00-17:00). Concurrent downloads from SharePoint/OneDrive of confidential IP directories."
-  },
-  {
-    "id": 2424,
-    "tplId": "auth_fail",
-    "label": "Auth Bypass Attempt",
-    "sev": "medium",
-    "category": "Auth",
-    "impact": "Unauthorized Access",
-    "mitre": [
-      "T1078",
-      "T1550"
-    ],
-    "msg": "JWT token replay attack from 84.208.70.90 against /api/admin endpoint",
-    "srcIp": "205.88.175.237",
-    "host": "srv-api-02",
-    "user": "a.mueller",
-    "ts": 1777055430406,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Multiple requests using the same expired or stolen JWT from a new device/IP fingerprint. Likely credential replay attack."
-  },
-  {
-    "id": 2423,
-    "tplId": "brute",
-    "label": "SSH Brute Force",
-    "sev": "high",
-    "category": "Auth",
-    "impact": "Credential Theft",
-    "mitre": [
-      "T1110",
-      "T1021"
-    ],
-    "msg": "2893 failed SSH logins from 60.55.200.142 against 10.0.1.46 in 120s",
-    "srcIp": "85.123.25.140",
-    "host": "kafka-01",
-    "user": "t.yamamoto",
-    "ts": 1777055425607,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Sequential login failures using common dictionary passwords. Source IP has high risk score and has been flagged by 4+ external threat feeds in the last 24h."
-  },
-  {
-    "id": 2422,
-    "tplId": "anomaly",
-    "label": "Traffic Anomaly",
-    "sev": "medium",
-    "category": "Network",
-    "impact": "Potential C2 Comms",
-    "mitre": [
-      "T1571",
-      "T1008"
-    ],
-    "msg": "Beaconing pattern detected: 206.11.20.216 every 184s on non-standard port 4444",
-    "srcIp": "120.171.244.43",
-    "host": "ws-corp-042",
-    "user": "l.santos",
-    "ts": 1777055424405,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
-  },
-  {
-    "id": 2421,
-    "tplId": "c2",
-    "label": "Malware C2 Beacon",
-    "sev": "critical",
-    "category": "Endpoint",
-    "impact": "Host Compromise",
-    "mitre": [
-      "T1071",
-      "T1095"
-    ],
-    "msg": "Cobalt Strike beacon from host dc-prod-01 → 34.180.225.139:443 (beaconing every 60s)",
-    "srcIp": "153.207.234.75",
-    "host": "srv-web-15",
-    "user": "devops.raj",
-    "ts": 1777055406735,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Consistent 60-second jittered heartbeats detected via encrypted tunnel. Pattern matches known Cobalt Strike Malleable C2 profiles often used by APT-29."
-  },
-  {
-    "id": 2420,
-    "tplId": "insider",
-    "label": "Insider Threat Indicator",
-    "sev": "medium",
-    "category": "UEBA",
-    "impact": "Data Leakage",
-    "mitre": [
-      "T1078",
-      "T1213"
-    ],
-    "msg": "sara.miller@corp.local accessed 6245 restricted files outside business hours",
-    "srcIp": "221.192.238.228",
-    "host": "srv-web-15",
-    "user": "k.petrov",
-    "ts": 1777055404340,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Access pattern deviates from user baseline (9:00-17:00). Concurrent downloads from SharePoint/OneDrive of confidential IP directories."
-  },
-  {
-    "id": 2419,
-    "tplId": "ransomware",
-    "label": "Ransomware Activity",
-    "sev": "critical",
-    "category": "Endpoint",
-    "impact": "Data Destruction",
-    "mitre": [
-      "T1486",
-      "T1490"
-    ],
-    "msg": "Mass file encryption detected on db-prod-03 — .locked extension — 5285 files affected",
-    "srcIp": "116.114.226.122",
-    "host": "srv-web-15",
-    "user": "a.mueller",
-    "ts": 1777055400735,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Rapid succession of file rename and write operations on high-value directories followed by shadow copy deletion. Signatures align with BlackCat/ALPHV ransomware behaviors."
-  },
-  {
-    "id": 2418,
-    "tplId": "anomaly",
-    "label": "Traffic Anomaly",
-    "sev": "medium",
-    "category": "Network",
-    "impact": "Potential C2 Comms",
-    "mitre": [
-      "T1571",
-      "T1008"
-    ],
-    "msg": "Beaconing pattern detected: 99.148.63.219 every 111s on non-standard port 4444",
-    "srcIp": "96.75.129.163",
-    "host": "kafka-01",
-    "user": "k.petrov",
-    "ts": 1777055395937,
-    "status": "new",
-    "assignee": null,
-    "aiInsight": "Recurring connection attempts on unusual port with fixed packet sizes. Heuristics suggest a dormant backdoor attempting to check-in with a remote listener."
   }
 ]
